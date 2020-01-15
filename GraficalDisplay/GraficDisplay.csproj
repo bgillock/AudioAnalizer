@@ -80,7 +80,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\WaveDump\WaveDump\WaveDump.csproj">
+    <ProjectReference Include="..\..\..\..\..\Documents\Visual Studio 2012\Projects\GraphDisplay\GraphDisplay\WaveDump\WaveDump.csproj">
       <Project>{32463b1d-3e37-4036-81a8-a390e7802a0e}</Project>
       <Name>WaveDump</Name>
     </ProjectReference>

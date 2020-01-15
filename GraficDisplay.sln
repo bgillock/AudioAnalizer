@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraficDisplay", "GraficalDi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphLib", "GraphLib\GraphLib.csproj", "{0C0A1F4D-1363-4544-A7C5-196C76D26CCA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaveDump", "..\..\WaveDump\WaveDump\WaveDump.csproj", "{32463B1D-3E37-4036-81A8-A390E7802A0E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaveDump", "..\..\..\..\Documents\Visual Studio 2012\Projects\GraphDisplay\GraphDisplay\WaveDump\WaveDump.csproj", "{32463B1D-3E37-4036-81A8-A390E7802A0E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
