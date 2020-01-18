@@ -395,11 +395,13 @@ namespace GraphLib
             }
         }
 
-        private void OnScrollBarSpeedScroll(object sender, ScrollEventArgs e)
+        private void OnScrollBarSize(object sender, ScrollEventArgs e)
         {
-            float Percentage = hScrollBar2.Value / 10000.0f;
-            float delta = play_speed_max - play_speed_min;
-            play_speed = play_speed_min + Percentage * delta;
+            float newSize = (float)hScrollBar2.Value;
+            float currentSize = gPane.XD1 - gPane.XD0;
+            gPane.XD0 = gPane.XD0 - (newSize - currentSize) / 2.0f;
+            gPane.XD1 = gPane.XD1 + (newSize - currentSize) / 2.0f;
+            gPane.Invalidate();
         }
 
         #endregion

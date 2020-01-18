@@ -1,7 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
+using System.IO;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
@@ -27,7 +26,6 @@ using System.Threading;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
  * THE SOFTWARE.
  */
-using WaveDump;
 
 namespace GraficDisplay
 {
@@ -36,12 +34,14 @@ namespace GraficDisplay
     public partial class MainForm : Form
     {
 
-        private int NumGraphs = 4;
-        private String CurExample = "TILED_VERTICAL_AUTO";
+        private int NumGraphs = 2;
+        private String CurExample = "NORMAL";
         private String CurColorSchema = "GRAY";
         private PrecisionTimer.Timer mTimer = null;
         private DateTime lastTimerTick = DateTime.Now;
-        
+        private String ReferenceFileName = @"E:\Music\DigitalDomain\1KHz Sine Wave @ -20dB-dbRip.wav";
+        private String CompareFileName = @"E:\Music\DigitalDomain\1KHz Sine Wave @ -60dB-dbRip.wav";
+
         public MainForm()
         {           
             InitializeComponent();
@@ -326,6 +326,20 @@ namespace GraficDisplay
             display.DataSources.Clear();
             display.SetDisplayRangeX(0, 400);
 
+            // Compare mode?
+            if (this.ReferenceFileName != "" && this.CompareFileName != "")
+            {
+                display.DataSources.Add(createFileDataSource(this.ReferenceFileName));
+                display.DataSources.Add(createFileDataSource(this.CompareFileName));
+
+                ApplyColorSchema();
+
+                this.ResumeLayout();
+                display.Refresh();
+                return;
+            }
+
+            // Not compare mode, use default modes
             for (int j = 0; j < NumGraphs; j++)
             {
                 display.DataSources.Add(new DataSource());
@@ -713,6 +727,27 @@ namespace GraficDisplay
             UpdateGraphCountMenu();
         }
 
+        private DataSource createFileDataSource(String filename)
+        {
+            DataSource ds = new DataSource();
+            ds.Name = Path.GetFileNameWithoutExtension(filename);
+            ds.OnRenderXAxisLabel += RenderXLabel;
+            WaveDump.WaveReader wr0 = new WaveDump.WaveReader(filename, 0);
+            ds.Length = wr0.nSamples;
+            ds.SampleRate = wr0.sampleRate;
+            ds.AutoScaleY = false;
+            ds.SetDisplayRangeY(-32767, 32768);
+            ds.SetGridDistanceY(10000);
+            ds.OnRenderYAxisLabel = RenderYLabel;
+            //ds.Samples = new cPoint[wr0.nSamples];
+            for (int i = 0; i < ds.Length; i++)
+            {
+                ds.Samples[i].x = i;
+                ds.Samples[i].y = wr0.left[i];
+            }
+            wr0.Dump();
+            return ds;
+        }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -743,28 +778,7 @@ namespace GraficDisplay
                 
                 for (int j = 0; j < openFileDialog1.FileNames.Length; j++)
                 {
-                    display.DataSources.Add(new DataSource());
-                    display.DataSources[j].Name = openFileDialog1.FileNames[j];
-                    display.DataSources[j].OnRenderXAxisLabel += RenderXLabel;
-                    WaveDump.WaveReader wr0 = new WaveDump.WaveReader(openFileDialog1.FileNames[j], 0);
-                    display.DataSources[j].Length = wr0.nSamples;
-                    display.DataSources[j].SampleRate = wr0.sampleRate;
-                    display.DataSources[j].AutoScaleY = false;
-                    display.DataSources[j].SetDisplayRangeY(-32767, 32768);
-                    display.DataSources[j].SetGridDistanceY(10000);
-                    display.DataSources[j].OnRenderYAxisLabel = RenderYLabel;
-                    //display.DataSources[j].Samples = new cPoint[wr0.nSamples];
-                    for (int i = 0; i < display.DataSources[j].Length; i++)
-                    {
-                        display.DataSources[j].Samples[i].x = i;
-                        display.DataSources[j].Samples[i].y = wr0.left[i];
-                    }
-                    //display.DataSources[j].AutoScaleX = true;
-                    //CalcSinusFunction_0(display.DataSources[j], j);
-
-                    //WaveDump.WaveReader wr0 = new WaveDump.WaveReader(openFileDialog1.FileNames[f], 0);
-                    wr0.Dump();
-                    //System.Diagnostics.Debug.WriteLine(openFileDialog1.FileNames[f]);
+                    display.DataSources.Add(createFileDataSource(openFileDialog1.FileNames[j]));
                 }
                 ApplyColorSchema();
 

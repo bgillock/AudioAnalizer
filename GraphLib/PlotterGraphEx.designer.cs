@@ -28,20 +28,21 @@ namespace GraphLib
             this.toolBarButton2 = new System.Windows.Forms.ToolBarButton();
             this.imgList1 = new System.Windows.Forms.ImageList(this.components);
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.panel1 = new System.Windows.Forms.Panel();
             this.lb_Position = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.hScrollBar2 = new System.Windows.Forms.HScrollBar();
             this.hScrollBar1 = new System.Windows.Forms.HScrollBar();
+            this.hScrollBar2 = new System.Windows.Forms.HScrollBar();
+            this.gPane = new GraphLib.PlotterGraphPaneEx();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.selectGraphsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.gPane = new GraphLib.PlotterGraphPaneEx();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
-            this.contextMenuStrip1.SuspendLayout();
             this.panel1.SuspendLayout();
+            this.contextMenuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // tb1
@@ -127,6 +128,17 @@ namespace GraphLib
             this.splitContainer1.TabIndex = 2;
             this.splitContainer1.TabStop = false;
             // 
+            // panel1
+            // 
+            this.panel1.Controls.Add(this.lb_Position);
+            this.panel1.Controls.Add(this.label1);
+            this.panel1.Controls.Add(this.hScrollBar1);
+            this.panel1.Controls.Add(this.hScrollBar2);
+            this.panel1.Location = new System.Drawing.Point(99, 3);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(496, 28);
+            this.panel1.TabIndex = 7;
+            // 
             // lb_Position
             // 
             this.lb_Position.AutoSize = true;
@@ -143,19 +155,9 @@ namespace GraphLib
             this.label1.ForeColor = System.Drawing.SystemColors.ControlLightLight;
             this.label1.Location = new System.Drawing.Point(180, 8);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(85, 13);
+            this.label1.Size = new System.Drawing.Size(49, 13);
             this.label1.TabIndex = 2;
-            this.label1.Text = "Playback Speed";
-            // 
-            // hScrollBar2
-            // 
-            this.hScrollBar2.Location = new System.Drawing.Point(268, 10);
-            this.hScrollBar2.Maximum = 10000;
-            this.hScrollBar2.Name = "hScrollBar2";
-            this.hScrollBar2.Size = new System.Drawing.Size(111, 10);
-            this.hScrollBar2.TabIndex = 6;
-            this.hScrollBar2.Value = 1;
-            this.hScrollBar2.Scroll += new System.Windows.Forms.ScrollEventHandler(this.OnScrollBarSpeedScroll);
+            this.label1.Text = "X Range";
             // 
             // hScrollBar1
             // 
@@ -165,6 +167,24 @@ namespace GraphLib
             this.hScrollBar1.Size = new System.Drawing.Size(118, 10);
             this.hScrollBar1.TabIndex = 4;
             this.hScrollBar1.Scroll += new System.Windows.Forms.ScrollEventHandler(this.OnScrollbarScroll);
+            // 
+            // hScrollBar2
+            // 
+            this.hScrollBar2.Location = new System.Drawing.Point(232, 10);
+            this.hScrollBar2.Maximum = 10000;
+            this.hScrollBar2.Name = "hScrollBar2";
+            this.hScrollBar2.Size = new System.Drawing.Size(251, 10);
+            this.hScrollBar2.TabIndex = 6;
+            this.hScrollBar2.Value = 1;
+            this.hScrollBar2.Scroll += new System.Windows.Forms.ScrollEventHandler(this.OnScrollBarSize);
+            // 
+            // gPane
+            // 
+            this.gPane.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gPane.Location = new System.Drawing.Point(0, 0);
+            this.gPane.Name = "gPane";
+            this.gPane.Size = new System.Drawing.Size(598, 301);
+            this.gPane.TabIndex = 1;
             // 
             // contextMenuStrip1
             // 
@@ -186,25 +206,6 @@ namespace GraphLib
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(113, 6);
             // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.lb_Position);
-            this.panel1.Controls.Add(this.label1);
-            this.panel1.Controls.Add(this.hScrollBar1);
-            this.panel1.Controls.Add(this.hScrollBar2);
-            this.panel1.Location = new System.Drawing.Point(99, 3);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(496, 28);
-            this.panel1.TabIndex = 7;
-            // 
-            // gPane
-            // 
-            this.gPane.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.gPane.Location = new System.Drawing.Point(0, 0);
-            this.gPane.Name = "gPane";
-            this.gPane.Size = new System.Drawing.Size(598, 301);
-            this.gPane.TabIndex = 1;
-            // 
             // PlotterDisplayEx
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -217,10 +218,11 @@ namespace GraphLib
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel1.PerformLayout();
             this.splitContainer1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
-            this.contextMenuStrip1.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
+            this.contextMenuStrip1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }

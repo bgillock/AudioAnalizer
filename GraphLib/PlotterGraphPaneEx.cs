@@ -239,7 +239,7 @@ namespace GraphLib
                     }
                 }
             }
-
+            float nextX = 0;
             foreach (DataSource source in sources)
             {
                 source.Cur_YD0 = source.YD0;
@@ -459,7 +459,7 @@ namespace GraphLib
                     
                     if (layout == LayoutMode.NORMAL)
                     {
-                        DrawGraphCaption(CurGraphics, source, marker_pos, CurOffX + CurGraphIdx * (10 + yLabelAreaWidth), curOffY);
+                        nextX += DrawGraphCaption(CurGraphics, source, marker_pos, nextX + CurOffX + CurGraphIdx * (10 + yLabelAreaWidth), curOffY);
 
                         if (CurGraphIdx == 0)
                         {
@@ -470,7 +470,7 @@ namespace GraphLib
                     }
                     else
                     {
-                        DrawGraphCaption(CurGraphics, source, marker_pos, CurOffX, curOffY);
+                        float tmp = DrawGraphCaption(CurGraphics, source, marker_pos, CurOffX, curOffY);
 
                         DrawXLabels(CurGraphics, source, marker_pos, CurOffX, curOffY);
 
@@ -607,7 +607,7 @@ namespace GraphLib
 
                     List<int> marker_pos = DrawGraphCurve(CurGraphics, source, CurOffX, curOffY + GraphCaptionLineHeight / 2);
 
-                    DrawGraphCaption(CurGraphics, source, marker_pos, CurOffX + CurGraphIdx * (10 + yLabelAreaWidth), pad_top);
+                    float tmp = DrawGraphCaption(CurGraphics, source, marker_pos, CurOffX + CurGraphIdx * (10 + yLabelAreaWidth), pad_top);
                   
                     DrawYLabels(CurGraphics, source, marker_pos, CurOffX, curOffY);
 
@@ -868,6 +868,7 @@ namespace GraphLib
                     {
                         if (ps.Count > 0)
                         {
+                            g.DrawRectangles(p, createRectangles(ps).ToArray());
                             g.DrawLines(p, ps.ToArray());
                         }
                     }
@@ -876,18 +877,31 @@ namespace GraphLib
             return marker_positions;
         }
 
-        private void DrawGraphCaption(Graphics g, DataSource source, List<int> marker_pos, float offset_x, float offset_y)
+        private List<Rectangle> createRectangles(List<Point> ps)
         {
+            List<Rectangle> rs = new List<Rectangle>();
+            foreach (Point p in ps)
+            {
+                rs.Add(new Rectangle(new Point(p.X - 1, p.Y - 1), new Size(3, 3)));
+            }
+            return rs;
+        }
+        private float DrawGraphCaption(Graphics g, DataSource source, List<int> marker_pos, float offset_x, float offset_y)
+        {
+            float nextX = (int)offset_x;
             using (Brush brush = new SolidBrush(source.GraphColor))
             {
                 using (Pen pen = new Pen(brush))
                 {
                     pen.DashPattern = MajorGridPattern;
 
+                    nextX += g.MeasureString(source.Name, legendFont).Width;
+                   
                     g.DrawString(source.Name, legendFont, brush, new PointF(offset_x + graphCaptionOffset.X + 12, offset_y +graphCaptionOffset.Y+ 2));
 
                 }
             }
+            return nextX;
         }
          
         /*
