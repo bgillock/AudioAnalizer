@@ -43,7 +43,7 @@ namespace GraphLib
         PlotterGraphSelectCurvesForm GraphPropertiesForm = null;
         PrintPreviewForm printPreviewForm = null;
 
-        private PrecisionTimer.Timer mTimer = null;
+        //private PrecisionTimer.Timer mTimer = null;
         private float play_speed = 0.5f;
         private float play_speed_max = 10f;
         private float play_speed_min = 0.5f;
@@ -58,11 +58,11 @@ namespace GraphLib
         public PlotterDisplayEx()
         {
             InitializeComponent();
-            mTimer = new PrecisionTimer.Timer();
-            mTimer.Period = 50;                         // 20 fps
-            mTimer.Tick += new EventHandler(OnTimerTick);
+            //mTimer = new PrecisionTimer.Timer();
+           // mTimer.Period = 50;                         // 20 fps
+            //mTimer.Tick += new EventHandler(OnTimerTick);
             play_speed = 0.5f; // 20x10 = 200 values per second == sample frequency     
-            mTimer.Start();
+            // mTimer.Start();
             isRunning = false;
         }
        
@@ -183,7 +183,11 @@ namespace GraphLib
             gPane.CurXD0 = gPane.XD0;
             gPane.CurXD1 = gPane.XD1;
         }
-       
+        public void SetFullRangeX(float x_start, float x_end)
+        {
+            gPane.XMin = x_start;
+            gPane.XMax = x_end;
+        }
         public void SetGridDistanceX(float grid_dist_x_samples)
         {
             gPane.grid_distance_x = grid_dist_x_samples;           
@@ -202,13 +206,13 @@ namespace GraphLib
         protected override void Dispose(bool disposing)
         {
             paused = true;
-
+            /*
             if (mTimer.IsRunning)
             {
                 mTimer.Stop();
                 mTimer.Dispose();
             }
-            
+            */          
             base.Dispose(disposing);
         }
 
@@ -216,7 +220,7 @@ namespace GraphLib
         {
             if (isRunning == false && paused == false)
             {
-                gPane.starting_idx = 0;
+                //gPane.starting_idx = 0;
                 paused = false;
                 isRunning = true;
                // mTimer.Start();                
@@ -340,7 +344,7 @@ namespace GraphLib
             {
                 try
                 {
-                    gPane.starting_idx += play_speed;
+                    // gPane.starting_idx += play_speed;
                     UpdateScrollBar();
                     gPane.Invalidate();
                 }
@@ -355,7 +359,7 @@ namespace GraphLib
             UpdatePlayback();
         }
         
-        private void UpdateScrollBar()
+        public void UpdateScrollBar()
         {
             if (InvokeRequired)
             {
@@ -365,18 +369,18 @@ namespace GraphLib
             {
                 if (gPane.Sources.Count > 0)
                 {
-                    if (gPane.starting_idx > gPane.Sources[0].Length)
+                    hScrollBar1.Minimum = (int)(gPane.XMin * 10000f);
+                    hScrollBar1.Maximum = (int)(gPane.XMax * 10000f);
+                    hScrollBar1.Value = (int)(gPane.XD0 * 10000f);
+                    hScrollBar1.LargeChange = (int)((gPane.XD1 - gPane.XD0) * 10000f);
+ 
+                    float maxGraphWidth = -1.0f;
+                    for (int i = 0; i < gPane.Sources.Count; i++)
                     {
-                        hScrollBar1.Value = 10000;
+                        if (gPane.Sources[i].CurGraphWidth > maxGraphWidth) maxGraphWidth = gPane.Sources[i].CurGraphWidth;
                     }
-                    else if (gPane.starting_idx >= 0)
-                    {
-                        hScrollBar1.Value = 10000 * (int)gPane.starting_idx / gPane.Sources[0].Length;
-                    }
-                    else
-                    {
-                        hScrollBar1.Value = 0;
-                    }
+
+                    hScrollBar1.SmallChange = (int)(((gPane.XD1 - gPane.XD0) / maxGraphWidth) * 10000f);
                 }
                 else
                 {
@@ -389,21 +393,13 @@ namespace GraphLib
         {
             if (gPane.Sources.Count > 0)
             {
-                int val = hScrollBar1.Value;
-                gPane.starting_idx = (int)(gPane.Sources[0].Length * (float)val / 10000.0f);
+                float val = (float)hScrollBar1.Value / 10000f;
+                float size = (float)hScrollBar1.LargeChange / 10000f; 
+                gPane.XD0 = val;
+                gPane.XD1 = val + size;
                 gPane.Invalidate();
             }
         }
-
-        private void OnScrollBarSize(object sender, ScrollEventArgs e)
-        {
-            float newSize = (float)hScrollBar2.Value;
-            float currentSize = gPane.XD1 - gPane.XD0;
-            gPane.XD0 = gPane.XD0 - (newSize - currentSize) / 2.0f;
-            gPane.XD1 = gPane.XD1 + (newSize - currentSize) / 2.0f;
-            gPane.Invalidate();
-        }
-
         #endregion
 
         private void ShowPrintPreview()
@@ -432,9 +428,39 @@ namespace GraphLib
 
         }
 
-       
+        private void gPane_Scroll(object sender, ScrollEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine("In Pane Scroll event");
+        }
 
-       
+        private void splitContainer1_Panel2_Resize(object sender, EventArgs e)
+        {
+            int test = 1;
+        }
 
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string scaleStr = comboBox1.Text;
+            if (scaleStr == "<All>")
+            {
+                SetDisplayRangeX(gPane.XMin, gPane.XMax);
+            }
+            else
+            {
+                float pixelsPerSample = float.Parse(scaleStr);
+                float minSecondsPerSample = 1.0f;
+                float maxGraphWidth = -1.0f;
+                for (int i=0; i<gPane.Sources.Count; i++)
+                {
+                    if ((1.0f / gPane.Sources[i].SampleRate) < minSecondsPerSample) minSecondsPerSample = 1.0f / gPane.Sources[i].SampleRate;
+                    if (gPane.Sources[i].CurGraphWidth > maxGraphWidth) maxGraphWidth = gPane.Sources[i].CurGraphWidth;
+                }
+                float newDX = maxGraphWidth * (minSecondsPerSample / pixelsPerSample);
+                SetDisplayRangeX(gPane.XD0, gPane.XD0 + newDX);
+            }
+            
+            UpdateScrollBar();
+            gPane.Invalidate();
+        }
     }
 }

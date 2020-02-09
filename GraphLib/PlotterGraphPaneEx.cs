@@ -69,16 +69,18 @@ namespace GraphLib
         private bool mouseDown = false;
 
       
-        public float starting_idx = 0;
-        
+        // public float starting_idx = 0;
 
-        public float XD0 = -50;
-        
-        public float XD1 = 100;
+        public float XMin = 0; // Minimum X of all sources
+        public float XMax = 100; // Maximum X of all sources
 
-        public float DX = 0;
+        public float XD0 = -50; // X left visible
         
-        public float off_X = 0;
+        public float XD1 = 100; // X right visible
+
+        public float DX = 0; // Delta X
+        
+        public float off_X = 0; 
 
         public float CurXD0 = 0;
         
@@ -195,7 +197,7 @@ namespace GraphLib
 
                 if (Math.Abs(off_X) > 0)
                 {
-                    starting_idx += off_X;                       
+                    // starting_idx += off_X;                       
                 }
                 
                 Invalidate();
@@ -282,7 +284,7 @@ namespace GraphLib
                         cPoint[] data = source.Samples;
                         float mult_y = source.CurGraphHeight / source.DY;
                         float mult_x = source.CurGraphWidth / DX;
-                        float coff_x = off_X - starting_idx * mult_x;
+                        float coff_x = off_X /*- (starting_idx * mult_x)*/;
 
                         if (source.AutoScaleX)
                         {
@@ -291,7 +293,7 @@ namespace GraphLib
 
                         for (int i = 0; i < data.Length - 1; i += DownSample)
                         {
-                            float x = data[i].x * mult_x + coff_x;
+                            float x = (data[i].x * mult_x) + coff_x;
 
                             if (data[i].y > ymax) ymax = data[i].y;
                             if (data[i].y < ymin) ymin = data[i].y;
@@ -320,7 +322,7 @@ namespace GraphLib
                     {
                         if (ActiveSources > 1)
                         {
-                            source.CurGraphHeight = (float)(CurHeight - pad_top - pad_bot) / ActiveSources - GraphCaptionLineHeight;
+                            source.CurGraphHeight = ((float)(CurHeight - pad_top - pad_bot) / ActiveSources) - GraphCaptionLineHeight;
                             float Diff = ((ActiveSources - 1) * pad_inter) / ActiveSources;
                             source.CurGraphHeight -= Diff;
                         }
@@ -333,7 +335,7 @@ namespace GraphLib
                     {
                         if (ActiveSources > 1)
                         {
-                            source.CurGraphHeight = (float)(CurHeight - pad_top - pad_bot) / ActiveSources - GraphCaptionLineHeight;
+                            source.CurGraphHeight = ((float)(CurHeight - pad_top - pad_bot) / ActiveSources) - GraphCaptionLineHeight;
                         }
                         else
                         {
@@ -344,10 +346,10 @@ namespace GraphLib
                     {
                         if (ActiveSources > 1)
                         {
-                            source.CurGraphHeight = (float)(CurHeight - pad_top - pad_bot) / VertTileCount - GraphCaptionLineHeight;
+                            source.CurGraphHeight = ((float)(CurHeight - pad_top - pad_bot) / VertTileCount) - GraphCaptionLineHeight;
                             float Diff = ((ActiveSources - 1) * pad_inter) / VertTileCount;
                             source.CurGraphHeight -= Diff;
-                            source.CurGraphWidth = (float)(CurWidth - pad_left - pad_right) / HorTileCount - yLabelAreaWidth;
+                            source.CurGraphWidth = ((float)(CurWidth - pad_left - pad_right) / HorTileCount) - yLabelAreaWidth;
                         }
                         else
                         {
@@ -357,7 +359,7 @@ namespace GraphLib
                     else
                     {
                         source.CurGraphHeight = (float)(CurHeight - pad_top - pad_bot) - GraphCaptionLineHeight;
-                        source.CurGraphWidth = CurWidth - pad_left - yLabelAreaWidth * ActiveSources - pad_right;
+                        source.CurGraphWidth = CurWidth - pad_left - (yLabelAreaWidth * ActiveSources) - pad_right;
 
                     }
 
@@ -392,23 +394,23 @@ namespace GraphLib
                                 int CurIdxY = CurGraphIdx % VertTileCount;
                                 int CurIdxX = CurGraphIdx / VertTileCount;
 
-                                curOffY = OFFY + pad_top + CurIdxY * (source.CurGraphHeight + GraphCaptionLineHeight);
-                                CurOffX = OFFX + yLabelAreaWidth + pad_left + CurIdxX * (yLabelAreaWidth + source.CurGraphWidth);
+                                curOffY = OFFY + pad_top + (CurIdxY * (source.CurGraphHeight + GraphCaptionLineHeight));
+                                CurOffX = OFFX + yLabelAreaWidth + pad_left + (CurIdxX * (yLabelAreaWidth + source.CurGraphWidth));
                             }
                             else
                             {
                                 int CurIdxX = CurGraphIdx % HorTileCount;
                                 int CurIdxY = CurGraphIdx / HorTileCount;
 
-                                curOffY = OFFY + pad_top + CurIdxY * (source.CurGraphHeight + GraphCaptionLineHeight);
-                                CurOffX = OFFX + yLabelAreaWidth + pad_left + CurIdxX * (yLabelAreaWidth + source.CurGraphWidth);
+                                curOffY = OFFY + pad_top + (CurIdxY * (source.CurGraphHeight + GraphCaptionLineHeight));
+                                CurOffX = OFFX + yLabelAreaWidth + pad_left + (CurIdxX * (yLabelAreaWidth + source.CurGraphWidth));
                             }
 
                         }
                         else
                         {
                             // one active source
-                            curOffY = OFFY + pad_top + CurGraphIdx * (source.CurGraphHeight + GraphCaptionLineHeight);
+                            curOffY = OFFY + pad_top + (CurGraphIdx * (source.CurGraphHeight + GraphCaptionLineHeight));
                             CurOffX = OFFX + pad_left + yLabelAreaWidth;
                         }
                     }
@@ -416,11 +418,11 @@ namespace GraphLib
                     {
                         if (ActiveSources > 1)
                         {
-                            curOffY = OFFY + pad_top + CurGraphIdx * (source.CurGraphHeight + GraphCaptionLineHeight + pad_inter);
+                            curOffY = OFFY + pad_top + (CurGraphIdx * (source.CurGraphHeight + GraphCaptionLineHeight + pad_inter));
                         }
                         else
                         {
-                            curOffY = OFFY + pad_top + CurGraphIdx * (source.CurGraphHeight + GraphCaptionLineHeight);
+                            curOffY = OFFY + pad_top + (CurGraphIdx * (source.CurGraphHeight + GraphCaptionLineHeight));
                         }
 
                         CurOffX = OFFX + pad_left + yLabelAreaWidth;
@@ -429,44 +431,44 @@ namespace GraphLib
                     {
                         if (ActiveSources > 1)
                         {
-                            curOffY = OFFY + pad_top + CurGraphIdx * (source.CurGraphHeight);
+                            curOffY = OFFY + pad_top + (CurGraphIdx * (source.CurGraphHeight));
                         }
                         else
                         {
-                            curOffY = OFFY + pad_top + CurGraphIdx * (source.CurGraphHeight);
+                            curOffY = OFFY + pad_top + (CurGraphIdx * (source.CurGraphHeight));
                         }
 
                         CurOffX = OFFX + pad_left + yLabelAreaWidth;
                     }
                     else
                     {
-                        CurOffX = OFFX + pad_left + yLabelAreaWidth * ActiveSources;
+                        CurOffX = OFFX + pad_left + (yLabelAreaWidth * ActiveSources);
                         curOffY = OFFY + pad_top;
                     }
 
-                    DrawGrid(CurGraphics, source, CurOffX, curOffY + GraphCaptionLineHeight / 2);
+                    DrawGrid(CurGraphics, source, CurOffX, curOffY + (GraphCaptionLineHeight / 2));
 
                     if (hasBoundingBox)
                     {
                         float w = source.CurGraphWidth;
-                        float h = source.CurGraphHeight + GraphCaptionLineHeight / 2;
+                        float h = source.CurGraphHeight + (GraphCaptionLineHeight / 2);
 
                         DrawGraphBox(CurGraphics, CurOffX, curOffY, w, h);
 
                     }
 
-                    List<int> marker_pos = DrawGraphCurve(CurGraphics, source, CurOffX, curOffY + GraphCaptionLineHeight / 2);
+                    List<int> marker_pos = DrawGraphCurve(CurGraphics, source, CurOffX, curOffY + (GraphCaptionLineHeight / 2));
                     
                     if (layout == LayoutMode.NORMAL)
                     {
-                        nextX += DrawGraphCaption(CurGraphics, source, marker_pos, nextX + CurOffX + CurGraphIdx * (10 + yLabelAreaWidth), curOffY);
+                        nextX += DrawGraphCaption(CurGraphics, source, marker_pos, nextX + CurOffX + (CurGraphIdx * (10 + yLabelAreaWidth)), curOffY);
 
                         if (CurGraphIdx == 0)
                         {
                             DrawXLabels(CurGraphics, source, marker_pos, CurOffX, curOffY);
                         }
 
-                        DrawYLabels(CurGraphics, source, marker_pos, CurOffX + yLabelAreaWidth * (CurGraphIdx - ActiveSources + 1), curOffY);
+                        DrawYLabels(CurGraphics, source, marker_pos, CurOffX + (yLabelAreaWidth * (CurGraphIdx - ActiveSources + 1)), curOffY);
                     }
                     else
                     {
@@ -523,7 +525,7 @@ namespace GraphLib
                         cPoint[] data = source.Samples;
                         float mult_y = source.CurGraphHeight / source.DY;
                         float mult_x = source.CurGraphWidth / DX;
-                        float coff_x = off_X - starting_idx * mult_x;
+                        float coff_x = off_X /*- (starting_idx * mult_x)*/;
 
                         if (source.AutoScaleX)
                         {
@@ -532,7 +534,7 @@ namespace GraphLib
 
                         for (int i = 0; i < data.Length - 1; i += DownSample)
                         {
-                            float x = data[i].x * mult_x + coff_x;
+                            float x = (data[i].x * mult_x) + coff_x;
 
                             if (data[i].y > ymax) ymax = data[i].y;
                             if (data[i].y < ymin) ymin = data[i].y;
@@ -589,25 +591,25 @@ namespace GraphLib
                    
                     if (ActiveSources > 1)
                     {
-                        curOffY = OFFY + pad_top + CurGraphIdx * (source.CurGraphHeight);
+                        curOffY = OFFY + pad_top + (CurGraphIdx * (source.CurGraphHeight));
                     }
                     else
                     {
-                        curOffY = OFFY + pad_top + CurGraphIdx * (source.CurGraphHeight);
+                        curOffY = OFFY + pad_top + (CurGraphIdx * (source.CurGraphHeight));
                     }
 
                     CurOffX = OFFX + pad_left + yLabelAreaWidth;                     
                     
-                    DrawGrid(CurGraphics, source, CurOffX, curOffY + GraphCaptionLineHeight / 2);
+                    DrawGrid(CurGraphics, source, CurOffX, curOffY + (GraphCaptionLineHeight / 2));
 
                     if (hasBoundingBox && CurGraphIdx == ActiveSources - 1)
                     {
                         DrawGraphBox(CurGraphics, pad_left + yLabelAreaWidth, pad_top, source.CurGraphWidth, CurHeigth - pad_top - GraphCaptionLineHeight);
                     }
 
-                    List<int> marker_pos = DrawGraphCurve(CurGraphics, source, CurOffX, curOffY + GraphCaptionLineHeight / 2);
+                    List<int> marker_pos = DrawGraphCurve(CurGraphics, source, CurOffX, curOffY + (GraphCaptionLineHeight / 2));
 
-                    float tmp = DrawGraphCaption(CurGraphics, source, marker_pos, CurOffX + CurGraphIdx * (10 + yLabelAreaWidth), pad_top);
+                    float tmp = DrawGraphCaption(CurGraphics, source, marker_pos, CurOffX + (CurGraphIdx * (10 + yLabelAreaWidth)), pad_top);
                   
                     DrawYLabels(CurGraphics, source, marker_pos, CurOffX, curOffY);
 
@@ -729,9 +731,9 @@ namespace GraphLib
     {
         int Idx = 0;
         float mult_x = source.CurGraphWidth / DX;
-        float coff_x = off_X - starting_idx * mult_x;
+        float coff_x = off_X /*- (starting_idx * mult_x)*/;
 
-        if (source.AutoScaleX)
+            if (source.AutoScaleX)
         {
             coff_x = off_X;     // avoid dragging in x-autoscale mode
         }
@@ -759,7 +761,7 @@ namespace GraphLib
                 {
                     while (true)
                     {
-                        float x = Idx * grid_distance_x * source.CurGraphWidth / DX + grid_off_x * source.CurGraphWidth / DX;
+                        float x = (Idx * grid_distance_x * source.CurGraphWidth / DX) + (grid_off_x * source.CurGraphWidth / DX);
 
                         if (MoveMinorGrid)
                         {
@@ -782,7 +784,7 @@ namespace GraphLib
 
                 if (source.DY != 0)
                 {
-                    float y0 = (float)(source.grid_off_y * source.CurGraphHeight / source.DY + source.off_Y);
+                    float y0 = (float)((source.grid_off_y * source.CurGraphHeight / source.DY) + source.off_Y);
 
                     // draw horizontal zero grid lines
                     g.DrawLine(p2, new Point((int)CurrOffX, (int)(CurOffY + y0 + 0.5f)), new Point((int)(CurrOffX + source.CurGraphWidth + 0.5f), (int)(CurOffY + y0 + 0.5f)));
@@ -790,7 +792,7 @@ namespace GraphLib
                     // draw horizontal grid lines
                     for (Idx = (int)(source.grid_off_y);Idx > (int)(source.YD0 ); Idx -= (int)source.grid_distance_y)
                     {
-                        float y = (float)(Idx * source.CurGraphHeight) / source.DY + source.off_Y;
+                        float y = ((float)(Idx * source.CurGraphHeight) / source.DY) + source.off_Y;
 
                         if (y >= 0 && y < source.CurGraphHeight)
                         {
@@ -803,7 +805,7 @@ namespace GraphLib
                     // draw horizontal grid lines
                     for (Idx = (int)(source.grid_off_y); Idx < (int)(source.YD1  ); Idx += (int)source.grid_distance_y)
                     {
-                        float y = (float)Idx * source.CurGraphHeight / source.DY + source.off_Y;
+                        float y = ((float)Idx * source.CurGraphHeight / source.DY) + source.off_Y;
 
                         if (y >= 0 && y < source.CurGraphHeight)
                         {
@@ -828,21 +830,25 @@ namespace GraphLib
                 if (source.Samples != null && source.Samples.Length > 1)
                 {
                    
-                    int DownSample = source.Downsampling;
+ 
                     cPoint[] data = source.Samples;
                     float mult_y = source.CurGraphHeight / source.DY;
-                    float mult_x = source.CurGraphWidth / DX;
-                    float coff_x = off_X - starting_idx * mult_x;
+                    float mult_x = source.CurGraphWidth / DX; // DX = nsamples x direction on screen
+                    float coff_x = off_X /*- (starting_idx * mult_x)*/;
 
                     if (source.AutoScaleX)
                     {
                         coff_x = off_X;     // avoid dragging in x-autoscale mode
                     }
 
-                    for (int i = 0; i < data.Length - 1; i += DownSample)
+                    int startI = (int)(XD0 * source.SampleRate);
+                    int endI = (int)(XD1 * source.SampleRate);
+                    int DownSample = (int)((float)(endI-startI)/(float)(source.CurGraphWidth*10.0))+1;
+                    for (int i = startI>=0?startI:endI; i <= data.Length - 1 && i <= endI; i += DownSample)
                     {
-                        float x = data[i].x  * mult_x   + coff_x;
-                        float y = data[i].y  * mult_y + source.off_Y;
+                        
+                        float x = (data[i].x  * mult_x)   + coff_x;
+                        float y = (data[i].y  * mult_y) + source.off_Y;
 
                         int xi = (int)(data[i].x);
 
@@ -882,7 +888,7 @@ namespace GraphLib
             List<Rectangle> rs = new List<Rectangle>();
             foreach (Point p in ps)
             {
-                rs.Add(new Rectangle(new Point(p.X - 1, p.Y - 1), new Size(3, 3)));
+                rs.Add(new Rectangle(new Point(p.X - 1, p.Y - 1), new Size(2, 2)));
             }
             return rs;
         }
@@ -933,7 +939,7 @@ namespace GraphLib
                             float mult_y = source.CurGraphHeight / source.DY;
                             float mult_x = source.CurGraphWidth / DX;
 
-                            float coff_x = off_X - starting_idx * mult_x;
+                            float coff_x = off_X /*- (starting_idx * mult_x)*/;
 
                             if (source.AutoScaleX)
                             {
@@ -946,7 +952,7 @@ namespace GraphLib
 
                                 if (xi % grid_distance_x == 0)
                                 {
-                                    float x = data[i].x * mult_x   + coff_x;
+                                    float x = (data[i].x * mult_x)   + coff_x;
 
                                     String value = "" + data[i].x;
 
@@ -971,7 +977,7 @@ namespace GraphLib
                                     {
                                         SizeF dim = g.MeasureString(value, legendFont);
                                         g.DrawString(value, legendFont, brush, 
-                                                            new PointF((int)(0.5f + x + offset_x + 4 - dim.Width / 2),
+                                                            new PointF((int)(0.5f + x + offset_x + 4 - (dim.Width / 2)),
                                                             GraphCaptionLineHeight + offset_y + source.CurGraphHeight + unknownOffset));
 
                                     }
@@ -998,7 +1004,7 @@ namespace GraphLib
                     {
                         float Idx = 0;
 
-                        float y0 = (float)(source.grid_off_y * source.CurGraphHeight / source.DY + source.off_Y);
+                        float y0 = (float)((source.grid_off_y * source.CurGraphHeight / source.DY) + source.off_Y);
 
                         String value = "" + Idx;
 
@@ -1008,7 +1014,7 @@ namespace GraphLib
                         }
 
                         SizeF dim = g.MeasureString(value, legendFont);
-                        g.DrawString(value, legendFont, b, new PointF((int)offset_x - dim.Width, (int)(offset_y + y0 + 0.5f + dim.Height / 2)));
+                        g.DrawString(value, legendFont, b, new PointF((int)offset_x - dim.Width, (int)(offset_y + y0 + 0.5f + (dim.Height / 2))));
 
                         float GridDistY = source.grid_distance_y;
 
@@ -1028,7 +1034,7 @@ namespace GraphLib
                         {
                             if (Idx != 0)
                             {
-                                float y1 = (float)((Idx) * source.CurGraphHeight) / source.DY + source.off_Y;
+                                float y1 = ((float)((Idx) * source.CurGraphHeight) / source.DY) + source.off_Y;
 
                                 value = "" + (Idx);
 
@@ -1038,7 +1044,7 @@ namespace GraphLib
                                 }
 
                                 dim = g.MeasureString(value, legendFont);
-                                g.DrawString(value, legendFont, b, new PointF((int)offset_x - dim.Width, (int)(offset_y + y1 + 0.5f + dim.Height / 2)));                                
+                                g.DrawString(value, legendFont, b, new PointF((int)offset_x - dim.Width, (int)(offset_y + y1 + 0.5f + (dim.Height / 2))));                                
                             }
                         }
 
@@ -1046,7 +1052,7 @@ namespace GraphLib
                         {
                             if (Idx != 0)
                             {
-                                float y2 = (float)((Idx) * source.CurGraphHeight) / source.DY + source.off_Y;
+                                float y2 = ((float)((Idx) * source.CurGraphHeight) / source.DY) + source.off_Y;
 
                                 value = "" + (Idx);
 
@@ -1056,7 +1062,7 @@ namespace GraphLib
                                 }                               
 
                                 dim = g.MeasureString(value, legendFont);
-                                g.DrawString(value, legendFont, b, new PointF((int)offset_x - dim.Width, (int)(offset_y + y2 + 0.5f + dim.Height / 2)));
+                                g.DrawString(value, legendFont, b, new PointF((int)offset_x - dim.Width, (int)(offset_y + y2 + 0.5f + (dim.Height / 2))));
                             }
                         }                             
                     }

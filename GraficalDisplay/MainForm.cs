@@ -37,10 +37,10 @@ namespace GraficDisplay
         private int NumGraphs = 2;
         private String CurExample = "NORMAL";
         private String CurColorSchema = "GRAY";
-        private PrecisionTimer.Timer mTimer = null;
+        //private PrecisionTimer.Timer mTimer = null;
         private DateTime lastTimerTick = DateTime.Now;
-        private String ReferenceFileName = @"E:\Music\DigitalDomain\1KHz Sine Wave @ -20dB-dbRip.wav";
-        private String CompareFileName = @"E:\Music\DigitalDomain\1KHz Sine Wave @ -60dB-dbRip.wav";
+        private String ReferenceFileName = @"I:\Music\Deftones\Deftones\03 Minerva.wav";
+        private String CompareFileName = @"I:\Music\Deftones\Deftones\03 MinervaMp3.wav";
 
         public MainForm()
         {           
@@ -56,18 +56,22 @@ namespace GraficDisplay
 
             UpdateColorSchemaMenu();
 
-            mTimer = new PrecisionTimer.Timer();
-            mTimer.Period = 40;                         // 20 fps
-            mTimer.Tick += new EventHandler(OnTimerTick);
+            //mTimer = new PrecisionTimer.Timer();
+            //mTimer.Period = 40;                         // 20 fps
+            //mTimer.Tick += new EventHandler(OnTimerTick);
             lastTimerTick = DateTime.Now;
-            mTimer.Start();             
+            //mTimer.Start();             
         }
 
         protected override void OnClosed(EventArgs e)
         {
+            /*
+            if (mTimer == null) return;
+            
             mTimer.Stop();
             mTimer.Dispose();
             base.OnClosed(e);
+            */
         }
         private void OnTimerTick(object sender, EventArgs e)
         {
@@ -324,7 +328,7 @@ namespace GraficDisplay
             this.SuspendLayout();
            
             display.DataSources.Clear();
-            display.SetDisplayRangeX(0, 400);
+            display.SetDisplayRangeX(0, 4);
 
             // Compare mode?
             if (this.ReferenceFileName != "" && this.CompareFileName != "")
@@ -332,8 +336,22 @@ namespace GraficDisplay
                 display.DataSources.Add(createFileDataSource(this.ReferenceFileName));
                 display.DataSources.Add(createFileDataSource(this.CompareFileName));
 
-                ApplyColorSchema();
+                float xmin = float.MaxValue;
+                float xmax = float.MinValue;
+                this.SuspendLayout();
 
+                for (int j = 0; j < display.DataSources.Count; j++)
+                {
+                    xmin = Math.Min(xmin, display.DataSources[j].XMin);
+                    xmax = Math.Max(xmax, display.DataSources[j].XMax);
+                }
+
+                display.SetFullRangeX(xmin, xmax);
+                display.SetDisplayRangeX(xmin, xmax);
+                display.UpdateScrollBar();
+
+                ApplyColorSchema();
+                
                 this.ResumeLayout();
                 display.Refresh();
                 return;
@@ -477,9 +495,12 @@ namespace GraficDisplay
             }
             else
             {
-                int minute = (int)(s.Samples[idx].x / 60 / s.SampleRate);
-                int second = (int)(s.Samples[idx].x - (minute * 60 * s.SampleRate)) / s.SampleRate;
-                int sample = (int)(s.Samples[idx].x - (minute * 60 * s.SampleRate) - (second * s.SampleRate));
+                //               int minute = (int)(s.Samples[idx].x / 60 / s.SampleRate);
+                //               int second = (int)(s.Samples[idx].x - (minute * 60 * s.SampleRate)) / s.SampleRate;
+                //               int sample = (int)(s.Samples[idx].x - (minute * 60 * s.SampleRate) - (second * s.SampleRate));
+                int minute = (int)(s.Samples[idx].x / 60);
+                int second = (int)(s.Samples[idx].x - (minute * 60)) / s.SampleRate;
+                int sample = (int)((s.Samples[idx].x - (minute * 60) - second) * s.SampleRate);
                 String Label = minute.ToString() + ":" + second.ToString() + "." + sample.ToString();
                 return Label;
             }
@@ -742,7 +763,7 @@ namespace GraficDisplay
             //ds.Samples = new cPoint[wr0.nSamples];
             for (int i = 0; i < ds.Length; i++)
             {
-                ds.Samples[i].x = i;
+                ds.Samples[i].x = (float)i/ds.SampleRate;
                 ds.Samples[i].y = wr0.left[i];
             }
             wr0.Dump();
@@ -770,21 +791,41 @@ namespace GraficDisplay
 
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
+                float xmin = float.MaxValue;
+                float xmax = float.MinValue;
                 this.SuspendLayout();
 
                 display.DataSources.Clear();
-                display.SetDisplayRangeX(0, 10000);
+                // display.SetDisplayRangeX(0, 10000);
                 NumGraphs = openFileDialog1.FileNames.Length;
                 
                 for (int j = 0; j < openFileDialog1.FileNames.Length; j++)
                 {
                     display.DataSources.Add(createFileDataSource(openFileDialog1.FileNames[j]));
+                    xmin = Math.Min(xmin, display.DataSources[j].XMin);
+                    xmax = Math.Max(xmax, display.DataSources[j].XMax);
                 }
                 ApplyColorSchema();
-
+                
+                display.SetDisplayRangeX(xmin,xmax);
                 this.ResumeLayout();
                 display.Refresh();
             }   
+        }
+
+        private void display_MouseMove(object sender, MouseEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine("In mouse wheel");
+        }
+
+        private void display_Resize(object sender, EventArgs e)
+        {
+            int resize = 1;
+        }
+
+        private void MainForm_Resize(object sender, EventArgs e)
+        {
+
         }
     }
 }
