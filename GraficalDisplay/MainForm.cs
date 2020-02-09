@@ -482,26 +482,20 @@ namespace GraficDisplay
         }
 
         private int SampleRate = 1;
-        private String RenderXLabel(DataSource s, int idx)
+        private String RenderXLabel(DataSource s, double value)
         {
             if (s.AutoScaleX)
             {
-                //if (idx % 2 == 0)
                 {
-                    int Value = (int)(s.Samples[idx].x );
-                    return "" + Value;
+                    int Value = (int)(value);
+                    return "" + value.ToString();
                 }
-                return "";
             }
             else
             {
-                //               int minute = (int)(s.Samples[idx].x / 60 / s.SampleRate);
-                //               int second = (int)(s.Samples[idx].x - (minute * 60 * s.SampleRate)) / s.SampleRate;
-                //               int sample = (int)(s.Samples[idx].x - (minute * 60 * s.SampleRate) - (second * s.SampleRate));
-                int minute = (int)(s.Samples[idx].x / 60);
-                int second = (int)(s.Samples[idx].x - (minute * 60)) / s.SampleRate;
-                int sample = (int)((s.Samples[idx].x - (minute * 60) - second) * s.SampleRate);
-                String Label = minute.ToString() + ":" + second.ToString() + "." + sample.ToString();
+                int minute = (int)(value / 60);
+                double second = (double)(value - (minute * 60));
+                String Label = minute.ToString() + ":" + second.ToString();
                 return Label;
             }
         }

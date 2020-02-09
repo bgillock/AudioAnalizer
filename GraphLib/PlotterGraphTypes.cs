@@ -37,7 +37,7 @@ namespace GraphLib
 
     public class DataSource  
     {
-        public delegate String OnDrawXAxisLabelEvent(DataSource src, int idx);
+        public delegate String OnDrawXAxisLabelEvent(DataSource src, double value);
         public delegate String OnDrawYAxisLabelEvent(DataSource src, float value);
 
         public OnDrawXAxisLabelEvent OnRenderXAxisLabel = null;

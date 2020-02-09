@@ -48,7 +48,7 @@ namespace GraphLib
      
         public LayoutMode layout = LayoutMode.NORMAL;
       
-        public Color MajorGridColor = Color.DarkGray;
+        public Color MajorGridColor = Color.Black;
         public Color MinorGridColor = Color.DarkGray;
         public Color GraphColor = Color.DarkGreen;
         public Color BgndColorTop = Color.White;
@@ -110,7 +110,7 @@ namespace GraphLib
 
         DashStyle MinorGridDashStyle = DashStyle.Custom;
         DashStyle MajorGridDashStyle = DashStyle.Custom;
-        public bool MoveMinorGrid = true;
+        public bool MoveMinorGrid = false;
 
         #endregion
 
@@ -457,26 +457,26 @@ namespace GraphLib
 
                     }
 
-                    List<int> marker_pos = DrawGraphCurve(CurGraphics, source, CurOffX, curOffY + (GraphCaptionLineHeight / 2));
+                    List<Anno> marker_pos = DrawGraphCurve(CurGraphics, source, CurOffX, curOffY + (GraphCaptionLineHeight / 2));
                     
                     if (layout == LayoutMode.NORMAL)
                     {
-                        nextX += DrawGraphCaption(CurGraphics, source, marker_pos, nextX + CurOffX + (CurGraphIdx * (10 + yLabelAreaWidth)), curOffY);
+                        nextX += DrawGraphCaption(CurGraphics, source, nextX + CurOffX + (CurGraphIdx * (10 + yLabelAreaWidth)), curOffY);
 
                         if (CurGraphIdx == 0)
                         {
                             DrawXLabels(CurGraphics, source, marker_pos, CurOffX, curOffY);
                         }
 
-                        DrawYLabels(CurGraphics, source, marker_pos, CurOffX + (yLabelAreaWidth * (CurGraphIdx - ActiveSources + 1)), curOffY);
+                        DrawYLabels(CurGraphics, source, CurOffX + (yLabelAreaWidth * (CurGraphIdx - ActiveSources + 1)), curOffY);
                     }
                     else
                     {
-                        float tmp = DrawGraphCaption(CurGraphics, source, marker_pos, CurOffX, curOffY);
+                        float tmp = DrawGraphCaption(CurGraphics, source, CurOffX, curOffY);
 
                         DrawXLabels(CurGraphics, source, marker_pos, CurOffX, curOffY);
 
-                        DrawYLabels(CurGraphics, source, marker_pos, CurOffX, curOffY);
+                        DrawYLabels(CurGraphics, source, CurOffX, curOffY);
                     }
 
                     
@@ -486,6 +486,20 @@ namespace GraphLib
             }
         }
 
+        private double getGridIncrement(DataSource source)
+        {
+            double gIncr = 0.001;
+            int gridLabelSize = 50;
+            int maxTicks = (int)(source.CurGraphWidth / gridLabelSize);
+            gIncr = (XD1 - XD0) / maxTicks;
+            if (gIncr < 0.001) gIncr = 0.001;
+            else if (gIncr < 0.01) gIncr = 0.01;
+            else if (gIncr < 0.1) gIncr = 0.1;
+            else if (gIncr < 1.0) gIncr = 1.0;
+            else gIncr = 10.0;
+
+            return gIncr;
+        }
         private void PaintStackedGraphs(Graphics CurGraphics,float CurWidth,float CurHeigth, float OFFX, float OFFY)
         {            
             int CurGraphIdx = 0;
@@ -607,11 +621,11 @@ namespace GraphLib
                         DrawGraphBox(CurGraphics, pad_left + yLabelAreaWidth, pad_top, source.CurGraphWidth, CurHeigth - pad_top - GraphCaptionLineHeight);
                     }
 
-                    List<int> marker_pos = DrawGraphCurve(CurGraphics, source, CurOffX, curOffY + (GraphCaptionLineHeight / 2));
+                    List<Anno> marker_pos = DrawGraphCurve(CurGraphics, source, CurOffX, curOffY + (GraphCaptionLineHeight / 2));
 
-                    float tmp = DrawGraphCaption(CurGraphics, source, marker_pos, CurOffX + (CurGraphIdx * (10 + yLabelAreaWidth)), pad_top);
+                    float tmp = DrawGraphCaption(CurGraphics, source, CurOffX + (CurGraphIdx * (10 + yLabelAreaWidth)), pad_top);
                   
-                    DrawYLabels(CurGraphics, source, marker_pos, CurOffX, curOffY);
+                    DrawYLabels(CurGraphics, source, CurOffX, curOffY);
 
                     if (CurGraphIdx == ActiveSources - 1)
                     {
@@ -728,100 +742,110 @@ namespace GraphLib
         }
 
         private void DrawGrid( Graphics g, DataSource source,  float CurrOffX, float CurOffY )
-    {
-        int Idx = 0;
-        float mult_x = source.CurGraphWidth / DX;
-        float coff_x = off_X /*- (starting_idx * mult_x)*/;
-
-            if (source.AutoScaleX)
         {
-            coff_x = off_X;     // avoid dragging in x-autoscale mode
-        }
+            int Idx = 0;
+            float mult_x = source.CurGraphWidth / DX;
+            float coff_x = off_X /*- (starting_idx * mult_x)*/;
 
-        Color CurGridColor = MajorGridColor;
-        Color CurMinGridClor = MinorGridColor;
+                if (source.AutoScaleX)
+            {
+                coff_x = off_X;     // avoid dragging in x-autoscale mode
+            }
 
-        if (layout == LayoutMode.NORMAL && source.AutoScaleY)
-        {
-            CurGridColor = source.GraphColor;
-            CurMinGridClor = source.GraphColor;
-        }
+            Color CurGridColor = MajorGridColor;
+            Color CurMinGridClor = MinorGridColor;
 
-        using (Pen minorGridPen = new Pen(CurMinGridClor))
-        {
-           minorGridPen.DashPattern = MinorGridPattern;
-           minorGridPen.DashStyle = MinorGridDashStyle;
+            if (layout == LayoutMode.NORMAL && source.AutoScaleY)
+            {
+                CurGridColor = source.GraphColor;
+                CurMinGridClor = source.GraphColor;
+            }
+
+            using (Pen minorGridPen = new Pen(CurMinGridClor))
+            {
+               minorGridPen.DashPattern = MinorGridPattern;
+               minorGridPen.DashStyle = MinorGridDashStyle;
           
-           using (Pen p2 = new Pen(CurGridColor))
-           {
-                p2.DashPattern = MajorGridPattern;
-                p2.DashStyle = MajorGridDashStyle;
+               using (Pen p2 = new Pen(CurGridColor))
+               {
+                    p2.DashPattern = MajorGridPattern;
+                    p2.DashStyle = MajorGridDashStyle;
 
-                if (DX != 0)
-                {
-                    while (true)
+                    if (DX != 0)
                     {
-                        float x = (Idx * grid_distance_x * source.CurGraphWidth / DX) + (grid_off_x * source.CurGraphWidth / DX);
-
-                        if (MoveMinorGrid)
+                        while (true)
                         {
-                            x += coff_x;
-                        }
+                            float x = (Idx * grid_distance_x * source.CurGraphWidth / DX) + (grid_off_x * source.CurGraphWidth / DX);
 
-                        if (x > 0 && x < source.CurGraphWidth)
-                        {
-                            g.DrawLine(minorGridPen, new Point((int)(x + CurrOffX - 0.5f), (int)(CurOffY)),
-                                                     new Point((int)(x + CurrOffX - 0.5f), (int)(CurOffY + source.CurGraphHeight)));                                
-                        }
-                        if (x > source.CurGraphWidth)
-                        {
-                            break;
-                        }
+                            if (MoveMinorGrid)
+                            {
+                                x += coff_x;
+                            }
 
-                        Idx++;
-                    }
-                }
+                            if (x > 0 && x < source.CurGraphWidth)
+                            {
+                                g.DrawLine(minorGridPen, new Point((int)(x + CurrOffX - 0.5f), (int)(CurOffY)),
+                                                         new Point((int)(x + CurrOffX - 0.5f), (int)(CurOffY + source.CurGraphHeight)));                                
+                            }
+                            if (x > source.CurGraphWidth)
+                            {
+                                break;
+                            }
 
-                if (source.DY != 0)
-                {
-                    float y0 = (float)((source.grid_off_y * source.CurGraphHeight / source.DY) + source.off_Y);
-
-                    // draw horizontal zero grid lines
-                    g.DrawLine(p2, new Point((int)CurrOffX, (int)(CurOffY + y0 + 0.5f)), new Point((int)(CurrOffX + source.CurGraphWidth + 0.5f), (int)(CurOffY + y0 + 0.5f)));
-
-                    // draw horizontal grid lines
-                    for (Idx = (int)(source.grid_off_y);Idx > (int)(source.YD0 ); Idx -= (int)source.grid_distance_y)
-                    {
-                        float y = ((float)(Idx * source.CurGraphHeight) / source.DY) + source.off_Y;
-
-                        if (y >= 0 && y < source.CurGraphHeight)
-                        {
-                            g.DrawLine(minorGridPen, 
-                                        new Point((int)CurrOffX, (int)(CurOffY + y + 0.5f)),
-                                        new Point((int)(CurrOffX + source.CurGraphWidth + 0.5f), (int)(0.5f + CurOffY + y)));
+                            Idx++;
                         }
                     }
 
-                    // draw horizontal grid lines
-                    for (Idx = (int)(source.grid_off_y); Idx < (int)(source.YD1  ); Idx += (int)source.grid_distance_y)
+                    if (source.DY != 0)
                     {
-                        float y = ((float)Idx * source.CurGraphHeight / source.DY) + source.off_Y;
+                        float y0 = (float)((source.grid_off_y * source.CurGraphHeight / source.DY) + source.off_Y);
 
-                        if (y >= 0 && y < source.CurGraphHeight)
+                        // draw horizontal zero grid lines
+                        g.DrawLine(p2, new Point((int)CurrOffX, (int)(CurOffY + y0 + 0.5f)), new Point((int)(CurrOffX + source.CurGraphWidth + 0.5f), (int)(CurOffY + y0 + 0.5f)));
+
+                        // draw horizontal grid lines
+                        for (Idx = (int)(source.grid_off_y);Idx > (int)(source.YD0 ); Idx -= (int)source.grid_distance_y)
                         {
-                            g.DrawLine(minorGridPen, 
-                                       new Point((int)CurrOffX, (int)(CurOffY + y + 0.5f)),
-                                       new Point((int)(CurrOffX + source.CurGraphWidth + 0.5f), (int)(0.5f + CurOffY + y)));
+                            float y = ((float)(Idx * source.CurGraphHeight) / source.DY) + source.off_Y;
+
+                            if (y >= 0 && y < source.CurGraphHeight)
+                            {
+                                g.DrawLine(minorGridPen, 
+                                            new Point((int)CurrOffX, (int)(CurOffY + y + 0.5f)),
+                                            new Point((int)(CurrOffX + source.CurGraphWidth + 0.5f), (int)(0.5f + CurOffY + y)));
+                            }
+                        }
+
+                        // draw horizontal grid lines
+                        for (Idx = (int)(source.grid_off_y); Idx < (int)(source.YD1  ); Idx += (int)source.grid_distance_y)
+                        {
+                            float y = ((float)Idx * source.CurGraphHeight / source.DY) + source.off_Y;
+
+                            if (y >= 0 && y < source.CurGraphHeight)
+                            {
+                                g.DrawLine(minorGridPen, 
+                                           new Point((int)CurrOffX, (int)(CurOffY + y + 0.5f)),
+                                           new Point((int)(CurrOffX + source.CurGraphWidth + 0.5f), (int)(0.5f + CurOffY + y)));
+                            }
                         }
                     }
                 }
             }
         }
-    }
       
-        private List<int> DrawGraphCurve( Graphics g, DataSource source,  float offset_x, float offset_y )
+        private class Anno
         {
-            List<int> marker_positions = new List<int>();
+            public Anno(int x, double v)
+            {
+                this.x = x;
+                this.value = v;
+            }
+            public int x;
+            public double value;
+        }
+        private List<Anno> DrawGraphCurve( Graphics g, DataSource source,  float offset_x, float offset_y )
+        {
+            List<Anno> marker_positions = new List<Anno>();
 
             if (DX != 0 && source.DY != 0)
             {
@@ -829,8 +853,6 @@ namespace GraphLib
                
                 if (source.Samples != null && source.Samples.Length > 1)
                 {
-                   
- 
                     cPoint[] data = source.Samples;
                     float mult_y = source.CurGraphHeight / source.DY;
                     float mult_x = source.CurGraphWidth / DX; // DX = nsamples x direction on screen
@@ -850,16 +872,6 @@ namespace GraphLib
                         float x = (data[i].x  * mult_x)   + coff_x;
                         float y = (data[i].y  * mult_y) + source.off_Y;
 
-                        int xi = (int)(data[i].x);
-
-                        if (xi % grid_distance_x == 0)
-                        {
-                            if (x >= (0 - xLabelAreaheight) && x <= (source.CurGraphWidth + xLabelAreaheight))
-                            {
-                                marker_positions.Add(i);
-                            }
-                        }
-
                         if (x > 0 && x < (source.CurGraphWidth))
                         {                           
                             ps.Add(new Point((int)(x + offset_x+0.5f), (int)(y  + offset_y  + 0.5f)));                             
@@ -878,6 +890,17 @@ namespace GraphLib
                             g.DrawLines(p, ps.ToArray());
                         }
                     }
+
+                    // Create marker_positions for x annotation
+                    double gIncrement = (double)getGridIncrement(source);
+                    double startTick = (double)((int)(XD0 / gIncrement) + 1) * gIncrement;
+                    double endTick = (double)((int)(XD1 / gIncrement)) * gIncrement;
+                    
+                    for (double tick=startTick; tick<=endTick; tick+=gIncrement)
+                    {
+                        int x = (int)((tick * mult_x) + coff_x);
+                        marker_positions.Add(new Anno(x,tick));
+                    }
                 }
             }
             return marker_positions;
@@ -892,7 +915,7 @@ namespace GraphLib
             }
             return rs;
         }
-        private float DrawGraphCaption(Graphics g, DataSource source, List<int> marker_pos, float offset_x, float offset_y)
+        private float DrawGraphCaption(Graphics g, DataSource source, float offset_x, float offset_y)
         {
             float nextX = (int)offset_x;
             using (Brush brush = new SolidBrush(source.GraphColor))
@@ -914,14 +937,14 @@ namespace GraphLib
          * 
          * 
          **/
-        private void DrawXLabels(Graphics g, DataSource source, List<int> marker_pos, float offset_x, float offset_y)
+        private void DrawXLabels(Graphics g, DataSource source, List<Anno> marker_pos, float offset_x, float offset_y)
         {
             Color XLabColor = source.GraphColor;
 
             if (layout == LayoutMode.NORMAL || 
                 layout == LayoutMode.STACKED)
             {
-                XLabColor = GraphBoxColor;
+                XLabColor = MajorGridColor;
             }
 
             using (Brush brush = new SolidBrush(XLabColor))
@@ -932,66 +955,43 @@ namespace GraphLib
                   
                     if (DX != 0 && source.DY != 0)
                     {
-                        if (source.Samples != null && source.Samples.Length > 1)
+                        
+                        foreach (Anno a in marker_pos)
                         {
-                            cPoint[] data = source.Samples;
+                            String value = "" + a.value;
 
-                            float mult_y = source.CurGraphHeight / source.DY;
-                            float mult_x = source.CurGraphWidth / DX;
-
-                            float coff_x = off_X /*- (starting_idx * mult_x)*/;
-
-                            if (source.AutoScaleX)
+                            if (source.OnRenderXAxisLabel != null)
                             {
-                                coff_x = off_X;     // avoid dragging in x-autoscale mode
+                                value = source.OnRenderXAxisLabel(source, a.value);
                             }
 
-                            foreach (int i in marker_pos)
+                            /// TODO: find out how to calculate this offset. Must be padding + something else
+                            float unknownOffset = -14;// -14;
+                            float x = 0.5f + (float)a.x + offset_x + 4f;
+                            if (MoveMinorGrid == false)
                             {
-                                int xi = (int)(data[i].x);
+                                g.DrawLine(pen, x, offset_y +  GraphCaptionLineHeight  + source.CurGraphHeight + unknownOffset,
+                                                x, offset_y + GraphCaptionLineHeight /* + source.CurGraphHeight */);
 
-                                if (xi % grid_distance_x == 0)
-                                {
-                                    float x = (data[i].x * mult_x)   + coff_x;
+                                g.DrawString(value, legendFont, brush, 
+                                                new PointF(x,
+                                                GraphCaptionLineHeight + offset_y + source.CurGraphHeight + unknownOffset));
+                            }
+                            else
+                            {
+                                SizeF dim = g.MeasureString(value, legendFont);
+                                g.DrawString(value, legendFont, brush, 
+                                                    new PointF((int)(0.5f + x + offset_x + 4 - (dim.Width / 2)),
+                                                    GraphCaptionLineHeight + offset_y + source.CurGraphHeight + unknownOffset));
 
-                                    String value = "" + data[i].x;
-
-                                    if (source.OnRenderXAxisLabel != null)
-                                    {
-                                        value = source.OnRenderXAxisLabel(source, i);
-                                    }
-
-                                    /// TODO: find out how to calculate this offset. Must be padding + something else
-                                    float unknownOffset = -14;// -14;
-
-                                    if (MoveMinorGrid == false)
-                                    {
-                                        g.DrawLine(pen, x, offset_y +  GraphCaptionLineHeight  + source.CurGraphHeight + unknownOffset,
-                                                        x, offset_y + GraphCaptionLineHeight + source.CurGraphHeight);
-
-                                        g.DrawString(value, legendFont, brush, 
-                                                        new PointF((int)(0.5f + x + offset_x + 4),
-                                                        GraphCaptionLineHeight + offset_y + source.CurGraphHeight + unknownOffset));
-                                    }
-                                    else
-                                    {
-                                        SizeF dim = g.MeasureString(value, legendFont);
-                                        g.DrawString(value, legendFont, brush, 
-                                                            new PointF((int)(0.5f + x + offset_x + 4 - (dim.Width / 2)),
-                                                            GraphCaptionLineHeight + offset_y + source.CurGraphHeight + unknownOffset));
-
-                                    }
-                                }
                             }
                         }
                     }
-
-                   
                 }
             }
         }
 
-        private void DrawYLabels(Graphics g, DataSource source, List<int> marker_pos,  float offset_x,  float offset_y )
+        private void DrawYLabels(Graphics g, DataSource source, float offset_x,  float offset_y )
         {
             using (Brush b = new SolidBrush(source.GraphColor))
             {
