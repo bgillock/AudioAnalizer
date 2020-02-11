@@ -79,7 +79,7 @@ namespace GraficDisplay
             this.layoutToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1401, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(1661, 24);
             this.menuStrip1.TabIndex = 2;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -365,23 +365,21 @@ namespace GraficDisplay
             this.display.Location = new System.Drawing.Point(0, 24);
             this.display.Name = "display";
             this.display.PlaySpeed = 0.5F;
-            this.display.Size = new System.Drawing.Size(1401, 472);
+            this.display.Size = new System.Drawing.Size(1661, 724);
             this.display.SolidGridColor = System.Drawing.Color.Blue;
             this.display.TabIndex = 1;
             this.display.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.display_MouseMove);
-            this.display.Resize += new System.EventHandler(this.display_Resize);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1401, 496);
+            this.ClientSize = new System.Drawing.Size(1661, 748);
             this.Controls.Add(this.display);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "MainForm";
             this.Text = "GraphLib Demo";
-            this.Resize += new System.EventHandler(this.MainForm_Resize);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);

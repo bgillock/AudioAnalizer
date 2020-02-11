@@ -35,8 +35,9 @@ namespace GraficDisplay
     {
 
         private int NumGraphs = 2;
+        private bool DrawDots = true;
         private String CurExample = "NORMAL";
-        private String CurColorSchema = "GRAY";
+        private String CurColorSchema = "BLACK";
         //private PrecisionTimer.Timer mTimer = null;
         private DateTime lastTimerTick = DateTime.Now;
         private String ReferenceFileName = @"I:\Music\Deftones\Deftones\03 Minerva.wav";
@@ -336,8 +337,8 @@ namespace GraficDisplay
                 display.DataSources.Add(createFileDataSource(this.ReferenceFileName));
                 display.DataSources.Add(createFileDataSource(this.CompareFileName));
 
-                float xmin = float.MaxValue;
-                float xmax = float.MinValue;
+                double xmin = double.MaxValue;
+                double xmax = double.MinValue;
                 this.SuspendLayout();
 
                 for (int j = 0; j < display.DataSources.Count; j++)
@@ -757,7 +758,7 @@ namespace GraficDisplay
             //ds.Samples = new cPoint[wr0.nSamples];
             for (int i = 0; i < ds.Length; i++)
             {
-                ds.Samples[i].x = (float)i/ds.SampleRate;
+                ds.Samples[i].x = (double)i/ds.SampleRate;
                 ds.Samples[i].y = wr0.left[i];
             }
             wr0.Dump();
@@ -785,8 +786,8 @@ namespace GraficDisplay
 
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                float xmin = float.MaxValue;
-                float xmax = float.MinValue;
+                double xmin = double.MaxValue;
+                double xmax = double.MinValue;
                 this.SuspendLayout();
 
                 display.DataSources.Clear();
@@ -812,14 +813,5 @@ namespace GraficDisplay
             System.Diagnostics.Debug.WriteLine("In mouse wheel");
         }
 
-        private void display_Resize(object sender, EventArgs e)
-        {
-            int resize = 1;
-        }
-
-        private void MainForm_Resize(object sender, EventArgs e)
-        {
-
-        }
     }
 }

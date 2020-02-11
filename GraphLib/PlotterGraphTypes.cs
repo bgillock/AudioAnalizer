@@ -31,7 +31,7 @@ namespace GraphLib
 {
     public struct cPoint
     {
-        public float x;
+        public double x;
         public float y;
     }
 
@@ -127,11 +127,11 @@ namespace GraphLib
             }
         }
 
-        public float  XMin
+        public double  XMin
         {
             get
             {
-                float x_min = float.MaxValue;
+                double x_min = double.MaxValue;
                 if (samples.Length > 0)
                 {
                     foreach (cPoint p in samples)
@@ -143,11 +143,11 @@ namespace GraphLib
             }
         }
 
-        public float XMax
+        public double XMax
         {
             get
             {
-                float x_max = float.MinValue;
+                double x_max = double.MinValue;
                 if (samples.Length > 0)
                 {
                     foreach (cPoint p in samples)

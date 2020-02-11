@@ -37,6 +37,7 @@ namespace GraphLib
             this.Name = "PlotterGraphPaneEx";
             this.Size = new System.Drawing.Size(409, 150);
             this.Load += new System.EventHandler(this.OnLoadControl);
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.PlotterGraphPaneEx_KeyUp);
             this.ResumeLayout(false);
 
         }

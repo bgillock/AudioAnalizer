@@ -45,7 +45,7 @@ namespace GraphLib
 
         private BackBuffer memGraphics;        
         private int ActiveSources = 0;
-     
+        public bool ShowDots = true;
         public LayoutMode layout = LayoutMode.NORMAL;
       
         public Color MajorGridColor = Color.Black;
@@ -71,8 +71,8 @@ namespace GraphLib
       
         // public float starting_idx = 0;
 
-        public float XMin = 0; // Minimum X of all sources
-        public float XMax = 100; // Maximum X of all sources
+        public double XMin = 0; // Minimum X of all sources
+        public double XMax = 100; // Maximum X of all sources
 
         public float XD0 = -50; // X left visible
         
@@ -264,8 +264,8 @@ namespace GraphLib
 
                 if (source.AutoScaleX && source.Samples.Length > 0)
                 {
-                    CurXD0 = source.XMin - source.XAutoScaleOffset;
-                    CurXD1 = source.XMax + source.XAutoScaleOffset;
+                    CurXD0 = (float)source.XMin - source.XAutoScaleOffset;
+                    CurXD1 = (float)source.XMax + source.XAutoScaleOffset;
                     DX = CurXD1 - CurXD0;
                 }
 
@@ -283,7 +283,7 @@ namespace GraphLib
                         int DownSample = source.Downsampling;
                         cPoint[] data = source.Samples;
                         float mult_y = source.CurGraphHeight / source.DY;
-                        float mult_x = source.CurGraphWidth / DX;
+                        double mult_x = source.CurGraphWidth / DX;
                         float coff_x = off_X /*- (starting_idx * mult_x)*/;
 
                         if (source.AutoScaleX)
@@ -293,7 +293,7 @@ namespace GraphLib
 
                         for (int i = 0; i < data.Length - 1; i += DownSample)
                         {
-                            float x = (data[i].x * mult_x) + coff_x;
+                            float x = (float)(data[i].x * mult_x) + coff_x;
 
                             if (data[i].y > ymax) ymax = data[i].y;
                             if (data[i].y < ymin) ymin = data[i].y;
@@ -518,7 +518,7 @@ namespace GraphLib
 
                 if (source.AutoScaleX && source.Samples.Length > 0)
                 {
-                    DX = source.Samples[source.Samples.Length - 1].x;
+                    DX = (float)source.Samples[source.Samples.Length - 1].x;
                 }
 
                 CurXD0 = XD0;
@@ -538,7 +538,7 @@ namespace GraphLib
                         int DownSample = source.Downsampling;
                         cPoint[] data = source.Samples;
                         float mult_y = source.CurGraphHeight / source.DY;
-                        float mult_x = source.CurGraphWidth / DX;
+                        double mult_x = (double)source.CurGraphWidth / (double)DX;
                         float coff_x = off_X /*- (starting_idx * mult_x)*/;
 
                         if (source.AutoScaleX)
@@ -548,7 +548,7 @@ namespace GraphLib
 
                         for (int i = 0; i < data.Length - 1; i += DownSample)
                         {
-                            float x = (data[i].x * mult_x) + coff_x;
+                            float x = (float)(data[i].x * mult_x) + coff_x;
 
                             if (data[i].y > ymax) ymax = data[i].y;
                             if (data[i].y < ymin) ymin = data[i].y;
@@ -701,6 +701,7 @@ namespace GraphLib
                     }
 
                     CurGraphics.SmoothingMode = smoothing;
+                    
 
                     PaintControl(CurGraphics,this.Width,this.Height,0,0,true);
 
@@ -855,7 +856,7 @@ namespace GraphLib
                 {
                     cPoint[] data = source.Samples;
                     float mult_y = source.CurGraphHeight / source.DY;
-                    float mult_x = source.CurGraphWidth / DX; // DX = nsamples x direction on screen
+                    double mult_x = (double)source.CurGraphWidth / (double)DX; // DX = nsamples x direction on screen
                     float coff_x = off_X /*- (starting_idx * mult_x)*/;
 
                     if (source.AutoScaleX)
@@ -869,7 +870,7 @@ namespace GraphLib
                     for (int i = startI>=0?startI:endI; i <= data.Length - 1 && i <= endI; i += DownSample)
                     {
                         
-                        float x = (data[i].x  * mult_x)   + coff_x;
+                        float x = (float)((data[i].x  * mult_x) + (double)coff_x);
                         float y = (data[i].y  * mult_y) + source.off_Y;
 
                         if (x > 0 && x < (source.CurGraphWidth))
@@ -886,7 +887,7 @@ namespace GraphLib
                     {
                         if (ps.Count > 0)
                         {
-                            g.DrawRectangles(p, createRectangles(ps).ToArray());
+                            if (ShowDots) g.DrawRectangles(p, createRectangles(ps).ToArray());
                             g.DrawLines(p, ps.ToArray());
                         }
                     }
@@ -1087,6 +1088,16 @@ namespace GraphLib
                           new Point((int)(offset_x + 0.5f), (int)(offset_y + 0.5f)));
             }
         }
-          
+
+        private void PlotterGraphPaneEx_KeyUp(object sender, KeyEventArgs e)
+        {
+            switch ((int)e.KeyCode)
+            {
+                case 68:
+                    this.ShowDots = !this.ShowDots;
+                    Invalidate();
+                    break;
+            } 
+        }
     }
 }

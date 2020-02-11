@@ -176,14 +176,14 @@ namespace GraphLib
 
         #region PUBLIC METHODS
 
-        public void SetDisplayRangeX(float x_start, float x_end )
+        public void SetDisplayRangeX(double x_start, double x_end )
         {
-            gPane.XD0 = x_start;
-            gPane.XD1 = x_end;
+            gPane.XD0 = (float)x_start;
+            gPane.XD1 = (float)x_end;
             gPane.CurXD0 = gPane.XD0;
             gPane.CurXD1 = gPane.XD1;
         }
-        public void SetFullRangeX(float x_start, float x_end)
+        public void SetFullRangeX(double x_start, double x_end)
         {
             gPane.XMin = x_start;
             gPane.XMax = x_end;
