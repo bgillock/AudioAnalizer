@@ -388,7 +388,18 @@ namespace GraphLib
                 }
             }
         }
-         
+        public void UpdateShift()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new MethodInvoker(UpdateShift));
+            }
+            else
+            {
+                textBox1.Text = gPane.Sources[1].StartTime.ToString();
+            }
+        }
+
         private void OnScrollbarScroll(object sender, ScrollEventArgs e)
         {
             if (gPane.Sources.Count > 0)
@@ -461,6 +472,20 @@ namespace GraphLib
             
             UpdateScrollBar();
             gPane.Invalidate();
+        }
+
+        private void textBox1_KeyUp(object sender, KeyEventArgs e)
+        {
+            switch ((int)e.KeyCode)
+            {
+                case 13: // Enter
+                    if (gPane.Sources.Count > 1)
+                    {
+                        gPane.Sources[1].StartTime = double.Parse(textBox1.Text);
+                    }
+                    gPane.Invalidate();
+                    break;
+            } 
         }
     }
 }

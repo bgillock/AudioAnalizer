@@ -33,11 +33,13 @@ namespace GraphLib
             this.lb_Position = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.hScrollBar1 = new System.Windows.Forms.HScrollBar();
-            this.gPane = new GraphLib.PlotterGraphPaneEx();
+            this.gPane = new GraphLib.PlotterGraphPaneEx(this);
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.selectGraphsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-//           ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
+            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
@@ -130,6 +132,8 @@ namespace GraphLib
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.label2);
+            this.panel1.Controls.Add(this.textBox1);
             this.panel1.Controls.Add(this.comboBox1);
             this.panel1.Controls.Add(this.lb_Position);
             this.panel1.Controls.Add(this.label1);
@@ -154,7 +158,7 @@ namespace GraphLib
             "<All>"});
             this.comboBox1.Location = new System.Drawing.Point(243, 4);
             this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(168, 21);
+            this.comboBox1.Size = new System.Drawing.Size(90, 21);
             this.comboBox1.TabIndex = 5;
             this.comboBox1.Text = "<All>";
             this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
@@ -216,6 +220,25 @@ namespace GraphLib
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(113, 6);
             // 
+            // textBox1
+            // 
+            this.textBox1.Location = new System.Drawing.Point(393, 4);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(100, 20);
+            this.textBox1.TabIndex = 6;
+            this.textBox1.Text = "0.0";
+            this.textBox1.KeyUp += new System.Windows.Forms.KeyEventHandler(this.textBox1_KeyUp);
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.ForeColor = System.Drawing.SystemColors.ControlLightLight;
+            this.label2.Location = new System.Drawing.Point(352, 7);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(35, 13);
+            this.label2.TabIndex = 7;
+            this.label2.Text = "Offset";
+            // 
             // PlotterDisplayEx
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -256,5 +279,7 @@ namespace GraphLib
         private System.Windows.Forms.ToolBarButton toolBarButton2;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.TextBox textBox1;
     }
 }

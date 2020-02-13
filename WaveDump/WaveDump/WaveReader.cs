@@ -114,7 +114,7 @@ namespace WaveDump
             int output = 0;
             try
             {
-                if ((input[index] & 0x80) == 0)
+                if ((input[index] & 0x80) != 0)
                 {
                     byte[] b24 = new byte[4];
                     b24[0] = 0xFF;
@@ -155,7 +155,7 @@ namespace WaveDump
             int output = 0;
             try
             {
-                if ((input[index] & 0x80) == 0)
+                if ((input[index] & 0x80) != 0)
                 {
                     byte[] b24 = new byte[4];
                     b24[0] = 0xFF;

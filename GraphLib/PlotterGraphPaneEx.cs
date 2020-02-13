@@ -67,7 +67,7 @@ namespace GraphLib
       
         private Point mousePos = new Point();
         private bool mouseDown = false;
-
+        private PlotterDisplayEx display;
       
         // public float starting_idx = 0;
 
@@ -116,10 +116,10 @@ namespace GraphLib
 
         #region CONSTRUCTOR
 
-        public PlotterGraphPaneEx()
+        public PlotterGraphPaneEx(PlotterDisplayEx display)
         {
             memGraphics = new BackBuffer();
-
+            this.display = display;
             InitializeComponent();
 
             this.Resize += new System.EventHandler(this.OnResizeForm);
@@ -183,6 +183,14 @@ namespace GraphLib
             }
         }
 
+        private double linear_interp(double a, double b, double c, double d, double e)
+        {
+            if (Math.Abs(b - a) > 0)
+            {
+                return d + (((c - a) / (b - a)) * (e - d));
+            }
+            else return d;
+        }
         private void OnMouseMove(object sender, MouseEventArgs e)
         {
             if (mouseDown)
@@ -197,7 +205,8 @@ namespace GraphLib
 
                 if (Math.Abs(off_X) > 0)
                 {
-                    // starting_idx += off_X;                       
+                    XD0 += off_X;
+                    XD1 += off_X;
                 }
                 
                 Invalidate();
@@ -864,22 +873,49 @@ namespace GraphLib
                         coff_x = off_X;     // avoid dragging in x-autoscale mode
                     }
 
-                    int startI = (int)(XD0 * source.SampleRate);
-                    int endI = (int)(XD1 * source.SampleRate);
+                    int startI = (int)((XD0-source.StartTime) * source.SampleRate);
+                    int endI = (int)((XD1-source.StartTime) * source.SampleRate);
                     int DownSample = (int)((float)(endI-startI)/(float)(source.CurGraphWidth*10.0))+1;
-                    for (int i = startI>=0?startI:endI; i <= data.Length - 1 && i <= endI; i += DownSample)
+                    for (int i = startI>=0?startI:0; i <= data.Length - 1 && i <= endI; i += DownSample)
                     {
-                        
-                        float x = (float)((data[i].x  * mult_x) + (double)coff_x);
-                        float y = (data[i].y  * mult_y) + source.off_Y;
+                        if (DownSample > 1)
+                        {
+                            float yMin = float.MaxValue;
+                            float yMax = float.MinValue;
+                            int j = i;
+                            while (j < (i + DownSample) && (j <= data.Length - 1)) 
+                            {
+                                yMax = data[j].y > yMax ? data[j].y : yMax;
+                                yMin = data[j].y < yMin ? data[j].y : yMin;
+                                j++;
+                            }
 
-                        if (x > 0 && x < (source.CurGraphWidth))
-                        {                           
-                            ps.Add(new Point((int)(x + offset_x+0.5f), (int)(y  + offset_y  + 0.5f)));                             
+                            float x = (float)(((source.StartTime + data[i].x) * mult_x) + (double)coff_x);
+                            float y0 = (yMax * mult_y) + source.off_Y;
+                            float y1 = (yMin * mult_y) + source.off_Y;
+                            if (x > 0 && x < (source.CurGraphWidth))
+                            {
+                                ps.Add(new Point((int)(x + offset_x + 0.5f), (int)(y0 + offset_y + 0.5f)));
+                                ps.Add(new Point((int)(x + offset_x + 0.5f), (int)(y1 + offset_y + 0.5f)));
+                            }
+                            else if (x > source.CurGraphWidth)
+                            {
+                                break;
+                            }
                         }
-                        else if (x > source.CurGraphWidth)
-                        {                            
-                            break;
+                        else 
+                        {
+                            float x = (float)(((source.StartTime + data[i].x) * mult_x) + (double)coff_x);
+                            float y = (data[i].y * mult_y) + source.off_Y;
+
+                            if (x > 0 && x < (source.CurGraphWidth))
+                            {
+                                ps.Add(new Point((int)(x + offset_x + 0.5f), (int)(y + offset_y + 0.5f)));
+                            }
+                            else if (x > source.CurGraphWidth)
+                            {
+                                break;
+                            }
                         }
                     }
 
@@ -1088,6 +1124,8 @@ namespace GraphLib
                           new Point((int)(offset_x + 0.5f), (int)(offset_y + 0.5f)));
             }
         }
+        private bool ctrlPressed = false;
+        private bool shiftPressed = false;
 
         private void PlotterGraphPaneEx_KeyUp(object sender, KeyEventArgs e)
         {
@@ -1097,7 +1135,50 @@ namespace GraphLib
                     this.ShowDots = !this.ShowDots;
                     Invalidate();
                     break;
+                case 39: // Left arrow
+                case 38: // Up arrow
+                    if (this.Sources.Count > 1)
+                    {
+                        double shiftAmt = 1.0 / (double)this.Sources[1].SampleRate;
+                        if (shiftPressed) shiftAmt *= 10.0;
+                        if (ctrlPressed) shiftAmt *= 100.0;
+                        this.Sources[1].StartTime += shiftAmt;
+                        this.display.UpdateShift();
+                    }
+                    this.Invalidate();
+                    break;
+                case 37: // Right arrow
+                case 40: // Down arrow
+                    if (this.Sources.Count > 1)
+                    {
+                        double shiftAmt = 1.0 / (double)this.Sources[1].SampleRate;
+                        if (shiftPressed) shiftAmt *= 10.0;
+                        if (ctrlPressed) shiftAmt *= 100.0;
+                        this.Sources[1].StartTime -= shiftAmt;
+                        this.display.UpdateShift();
+                    }
+                    this.Invalidate();
+                    break;
+                case 17:
+                    ctrlPressed = false;
+                    break;
+                case 16:
+                    shiftPressed = false;
+                    break;
             } 
+        }
+
+        private void PlotterGraphPaneEx_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch ((int)e.KeyCode)
+            {
+                case 17:
+                    ctrlPressed = true;
+                    break;
+                case 16:
+                    shiftPressed = true;
+                    break;
+            }
         }
     }
 }

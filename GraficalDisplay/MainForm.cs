@@ -40,8 +40,8 @@ namespace GraficDisplay
         private String CurColorSchema = "BLACK";
         //private PrecisionTimer.Timer mTimer = null;
         private DateTime lastTimerTick = DateTime.Now;
-        private String ReferenceFileName = @"I:\Music\Deftones\Deftones\03 Minerva.wav";
-        private String CompareFileName = @"I:\Music\Deftones\Deftones\03 MinervaMp3.wav";
+        private String ReferenceFileName = @"V:\GrahamTube\Led Zeppelin - 180g Deluxe Edition Box Set's [1968 - 1982][FLAC][tracks+.cue][PROAC]\1971 - Led Zeppelin IV (2 LP 180g Deluxe Edition 2014)\A4 Stairway To Heaven.wav";
+        private String CompareFileName = @"V:\GrahamTube\Led Zeppelin - 180g Deluxe Edition Box Set's [1968 - 1982][FLAC][tracks+.cue][PROAC]\1971 - Led Zeppelin IV (2 LP 180g Deluxe Edition 2014)\A4 Stairway To Heaven (Remaster) Tidal [4416].wav";
 
         public MainForm()
         {           
@@ -752,14 +752,24 @@ namespace GraficDisplay
             ds.Length = wr0.nSamples;
             ds.SampleRate = wr0.sampleRate;
             ds.AutoScaleY = false;
-            ds.SetDisplayRangeY(-32767, 32768);
-            ds.SetGridDistanceY(10000);
+            
             ds.OnRenderYAxisLabel = RenderYLabel;
-            //ds.Samples = new cPoint[wr0.nSamples];
+            float max = float.MinValue;
             for (int i = 0; i < ds.Length; i++)
             {
-                ds.Samples[i].x = (double)i/ds.SampleRate;
+                ds.Samples[i].x = (double)i/(double)ds.SampleRate;
                 ds.Samples[i].y = wr0.left[i];
+                if (Math.Abs(wr0.left[i]) > max) max = Math.Abs(wr0.left[i]);
+            }
+            if (wr0.bitsPerSample == 16)
+            {
+                ds.SetDisplayRangeY(-max, max);
+                ds.SetGridDistanceY(max/10);
+            }
+            if (wr0.bitsPerSample == 24)
+            {
+                ds.SetDisplayRangeY(-max, max);
+                ds.SetGridDistanceY(max/10);
             }
             wr0.Dump();
             return ds;

@@ -63,7 +63,7 @@ namespace GraphLib
 
         public float off_Y = 0;
         public float grid_off_y = 0;
-        
+        public double StartTime = 0;
         public bool yFlip = true;      
         
         public bool Active = true;
@@ -139,7 +139,7 @@ namespace GraphLib
                         if (p.x < x_min)  x_min=p.x;
                     }
                 }
-                return x_min;
+                return StartTime + x_min;
             }
         }
 
@@ -155,7 +155,7 @@ namespace GraphLib
                         if (p.x > x_max) x_max = p.x;
                     }
                 }
-                return x_max;
+                return StartTime + x_max;
             }
         }
 
