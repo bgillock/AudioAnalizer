@@ -116,10 +116,10 @@ namespace GraphLib
 
         #region CONSTRUCTOR
 
-        public PlotterGraphPaneEx(PlotterDisplayEx display)
+        public PlotterGraphPaneEx()
         {
             memGraphics = new BackBuffer();
-            this.display = display;
+
             InitializeComponent();
 
             this.Resize += new System.EventHandler(this.OnResizeForm);
@@ -211,6 +211,11 @@ namespace GraphLib
                 
                 Invalidate();
             }
+        }
+
+        public void setDisplay(PlotterDisplayEx display)
+        {
+            this.display = display;
         }
 
         public void PaintGraphs(Graphics CurGraphics, float CurWidth, float CurHeight, float OFFX, float OFFY)
@@ -1136,7 +1141,6 @@ namespace GraphLib
                     Invalidate();
                     break;
                 case 39: // Left arrow
-                case 38: // Up arrow
                     if (this.Sources.Count > 1)
                     {
                         double shiftAmt = 1.0 / (double)this.Sources[1].SampleRate;
@@ -1147,8 +1151,22 @@ namespace GraphLib
                     }
                     this.Invalidate();
                     break;
-                case 37: // Right arrow
-                case 40: // Down arrow
+                case 38: // Up arrow
+                    if (this.Sources.Count > 1)
+                    {
+                        float shiftAmt = 1;
+                        if (shiftPressed) shiftAmt *= 10.0f;
+                        if (ctrlPressed) shiftAmt *= 100.0f;
+                        float current = this.Sources[1].YD1;
+                        current += shiftAmt;
+                        this.Sources[1].SetDisplayRangeY(-current, current);
+                        this.Sources[1].SetGridDistanceY(current / 10);
+                        this.display.UpdateYScale();
+                    }
+                    this.Invalidate();
+                    break;
+                   
+                case 37: // Right arrow 
                     if (this.Sources.Count > 1)
                     {
                         double shiftAmt = 1.0 / (double)this.Sources[1].SampleRate;
@@ -1156,6 +1174,20 @@ namespace GraphLib
                         if (ctrlPressed) shiftAmt *= 100.0;
                         this.Sources[1].StartTime -= shiftAmt;
                         this.display.UpdateShift();
+                    }
+                    this.Invalidate();
+                    break;
+                case 40: // Down arrow
+                    if (this.Sources.Count > 1)
+                    {
+                        float shiftAmt = -1;
+                        if (shiftPressed) shiftAmt *= 10.0f;
+                        if (ctrlPressed) shiftAmt *= 100.0f;
+                        float current = this.Sources[1].YD1;
+                        current += shiftAmt;
+                        this.Sources[1].SetDisplayRangeY(-current, current);
+                        this.Sources[1].SetGridDistanceY(current / 10);
+                        this.display.UpdateYScale();
                     }
                     this.Invalidate();
                     break;

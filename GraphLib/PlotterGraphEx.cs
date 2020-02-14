@@ -399,7 +399,17 @@ namespace GraphLib
                 textBox1.Text = gPane.Sources[1].StartTime.ToString();
             }
         }
-
+        public void UpdateYScale()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new MethodInvoker(UpdateYScale));
+            }
+            else
+            {
+                textBox2.Text = gPane.Sources[1].YD1.ToString();
+            }
+        }
         private void OnScrollbarScroll(object sender, ScrollEventArgs e)
         {
             if (gPane.Sources.Count > 0)
@@ -486,6 +496,22 @@ namespace GraphLib
                     gPane.Invalidate();
                     break;
             } 
+        }
+
+        private void textBox2_KeyUp(object sender, KeyEventArgs e)
+        {
+            switch ((int)e.KeyCode)
+            {
+                case 13: // Enter
+                    if (gPane.Sources.Count > 1)
+                    {
+                        float scaleY = float.Parse(textBox2.Text);
+                        gPane.Sources[1].SetDisplayRangeY(-scaleY, scaleY);
+                        gPane.Sources[1].SetGridDistanceY(scaleY / 10);
+                    }
+                    gPane.Invalidate();
+                    break;
+            }
         }
     }
 }

@@ -40,8 +40,8 @@ namespace GraficDisplay
         private String CurColorSchema = "BLACK";
         //private PrecisionTimer.Timer mTimer = null;
         private DateTime lastTimerTick = DateTime.Now;
-        private String ReferenceFileName = @"V:\GrahamTube\Led Zeppelin - 180g Deluxe Edition Box Set's [1968 - 1982][FLAC][tracks+.cue][PROAC]\1971 - Led Zeppelin IV (2 LP 180g Deluxe Edition 2014)\A4 Stairway To Heaven.wav";
-        private String CompareFileName = @"V:\GrahamTube\Led Zeppelin - 180g Deluxe Edition Box Set's [1968 - 1982][FLAC][tracks+.cue][PROAC]\1971 - Led Zeppelin IV (2 LP 180g Deluxe Edition 2014)\A4 Stairway To Heaven (Remaster) Tidal [4416].wav";
+        private String ReferenceFileName = @"M:\AppleLossless\Jeff Beck\Blow by Blow\Cause We've Ended as Lovers - CDRip.wav";
+        private String CompareFileName = @"M:\AppleLossless\Jeff Beck\Blow by Blow\Cause We've Ended as Lovers - Tidal.wav";
 
         public MainForm()
         {           
@@ -349,6 +349,7 @@ namespace GraficDisplay
 
                 display.SetFullRangeX(xmin, xmax);
                 display.SetDisplayRangeX(xmin, xmax);
+                display.UpdateYScale();
                 display.UpdateScrollBar();
 
                 ApplyColorSchema();
@@ -755,22 +756,21 @@ namespace GraficDisplay
             
             ds.OnRenderYAxisLabel = RenderYLabel;
             float max = float.MinValue;
+            double sum = 0.0;
             for (int i = 0; i < ds.Length; i++)
             {
                 ds.Samples[i].x = (double)i/(double)ds.SampleRate;
                 ds.Samples[i].y = wr0.left[i];
+
+                sum += Math.Abs(wr0.left[i]);
                 if (Math.Abs(wr0.left[i]) > max) max = Math.Abs(wr0.left[i]);
             }
-            if (wr0.bitsPerSample == 16)
-            {
-                ds.SetDisplayRangeY(-max, max);
-                ds.SetGridDistanceY(max/10);
-            }
-            if (wr0.bitsPerSample == 24)
-            {
-                ds.SetDisplayRangeY(-max, max);
-                ds.SetGridDistanceY(max/10);
-            }
+
+            double avg = sum / (double)ds.Length;
+            max = (float)avg * 15f;
+            ds.SetDisplayRangeY(-max, max);
+            ds.SetGridDistanceY(max/10);
+
             wr0.Dump();
             return ds;
         }
@@ -813,6 +813,7 @@ namespace GraficDisplay
                 ApplyColorSchema();
                 
                 display.SetDisplayRangeX(xmin,xmax);
+                display.UpdateYScale();
                 this.ResumeLayout();
                 display.Refresh();
             }   
