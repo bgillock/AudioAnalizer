@@ -10,6 +10,12 @@ namespace WaveDump
     public class WaveReader
     {
         private string _fname;
+        public enum Channel
+        {
+            LEFT,
+            RIGHT,
+            HISTOGRAM
+        }
         private unsafe void Flip(ref byte* f)
         {
             byte temp;
@@ -207,9 +213,11 @@ namespace WaveDump
         public double trackLength;
         public float[] left;
         public float[] right;
+        public int[] histogram;
 
-        public WaveReader(string fileName, int shift)
+        public WaveReader(string fileName)
         {
+
             _fname = fileName;
              using (BinaryReader reader = new BinaryReader(File.Open(_fname, FileMode.Open)))
             {
@@ -238,14 +246,18 @@ namespace WaveDump
                 subChunk2Size = audio.Length;
                 pos = 0 ;
                 nSamples = subChunk2Size / bytesPerSample;
-                nSamples += shift;
+
                 trackLength = nSamples / (double)sampleRate;
                 left = new float[nSamples];
                 right = new float[nSamples];
 
+                int histogramSize = (int)Math.Pow(2, (double)bitsPerSample);
+                histogram = new int[histogramSize];
+                for (int i = 0; i < histogramSize; i++) histogram[i] = 0;
+
                 pos = 0;
 
-                int startSample = shift;
+                int startSample = 0;
                 if (startSample < 0)
                 {
                     pos += -startSample * bytesPerSample;
@@ -261,11 +273,15 @@ namespace WaveDump
                     if (bitsPerSample == 16)
                     {
                         short l = GetShort(ref audio, pos); pos += 2;
+                        int hi = l + (histogramSize / 2);
+                        if ((hi >= 0) && (hi < histogram.Length)) histogram[hi]++;
                         left[sample] = (float)l;
                     }
                     if (bitsPerSample == 24)
                     {
                         int s = Get24(ref audio, pos); pos += 3;
+                        int hi = s + (histogramSize / 2);
+                        if ((hi >= 0) && (hi < histogram.Length)) histogram[hi]++;
                         left[sample] = (float)s;
                     }
 

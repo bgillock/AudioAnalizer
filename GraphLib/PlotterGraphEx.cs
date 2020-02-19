@@ -119,6 +119,15 @@ namespace GraphLib
             set { play_speed = value; }
         }
 
+        [Category("Channel")]
+        [DefaultValue(typeof(string), "Left")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+        public string Channel
+        {
+            get { return gPane.channel; }
+            set { gPane.channel = value; }
+        }
+
         [Category("Playback")]
         [DefaultValue(typeof(bool), "true")]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]

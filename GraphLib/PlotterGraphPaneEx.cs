@@ -64,6 +64,7 @@ namespace GraphLib
 
         public bool hasMovingGrid = true;
         public bool hasBoundingBox = true;
+        public string channel = "Left";
       
         private Point mousePos = new Point();
         private bool mouseDown = false;

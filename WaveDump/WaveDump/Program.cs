@@ -33,15 +33,15 @@ namespace WaveDump
 
             if (args.Length == 1)
             {
-                var wr0 = new WaveReader(args[0], 0);
+                var wr0 = new WaveReader(args[0]);
                 wr0.Dump();
                 return;
             }
             if (!System.IO.File.Exists(args[0])) { System.Console.WriteLine("File " + args[0] + " does not exist."); return; }
             if (!System.IO.File.Exists(args[1])) { System.Console.WriteLine("File " + args[1] + " does not exist."); return; }
 
-            var wr1 = new WaveReader(args[0], 0);
-            var wr2 = new WaveReader(args[1], 0);
+            var wr1 = new WaveReader(args[0]);
+            var wr2 = new WaveReader(args[1]);
 
 
             // if (wr1.sampleRate != wr2.sampleRate) { System.Console.WriteLine("Sample rates don't match"); return; }

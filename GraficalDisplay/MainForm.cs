@@ -40,8 +40,8 @@ namespace GraficDisplay
         private String CurColorSchema = "BLACK";
         //private PrecisionTimer.Timer mTimer = null;
         private DateTime lastTimerTick = DateTime.Now;
-        private String ReferenceFileName = @"M:\AppleLossless\Jeff Beck\Blow by Blow\Cause We've Ended as Lovers - CDRip.wav";
-        private String CompareFileName = @"M:\AppleLossless\Jeff Beck\Blow by Blow\Cause We've Ended as Lovers - Tidal.wav";
+        private String ReferenceFileName = @"C:\Users\bgill\Desktop\Sound\Music\Pneuma - CDRip.wav";
+        private String CompareFileName = @"C:\Users\bgill\Desktop\Sound\Music\Pneuma [S_AUS;P_AM].wav";
 
         public MainForm()
         {           
@@ -334,8 +334,8 @@ namespace GraficDisplay
             // Compare mode?
             if (this.ReferenceFileName != "" && this.CompareFileName != "")
             {
-                display.DataSources.Add(createFileDataSource(this.ReferenceFileName));
-                display.DataSources.Add(createFileDataSource(this.CompareFileName));
+                display.DataSources.Add(createFileDataSource(this.ReferenceFileName,WaveDump.WaveReader.Channel.LEFT));
+                display.DataSources.Add(createFileDataSource(this.CompareFileName,WaveDump.WaveReader.Channel.LEFT));
 
                 double xmin = double.MaxValue;
                 double xmax = double.MinValue;
@@ -744,12 +744,12 @@ namespace GraficDisplay
             UpdateGraphCountMenu();
         }
 
-        private DataSource createFileDataSource(String filename)
+        private DataSource createFileDataSource(String filename, WaveDump.WaveReader.Channel channel)
         {
             DataSource ds = new DataSource();
             ds.Name = Path.GetFileNameWithoutExtension(filename);
             ds.OnRenderXAxisLabel += RenderXLabel;
-            WaveDump.WaveReader wr0 = new WaveDump.WaveReader(filename, 0);
+            WaveDump.WaveReader wr0 = new WaveDump.WaveReader(filename);
             ds.Length = wr0.nSamples;
             ds.SampleRate = wr0.sampleRate;
             ds.AutoScaleY = false;
@@ -757,17 +757,36 @@ namespace GraficDisplay
             ds.OnRenderYAxisLabel = RenderYLabel;
             float max = float.MinValue;
             double sum = 0.0;
-            for (int i = 0; i < ds.Length; i++)
-            {
-                ds.Samples[i].x = (double)i/(double)ds.SampleRate;
-                ds.Samples[i].y = wr0.left[i];
 
-                sum += Math.Abs(wr0.left[i]);
-                if (Math.Abs(wr0.left[i]) > max) max = Math.Abs(wr0.left[i]);
+            if (channel != WaveDump.WaveReader.Channel.HISTOGRAM)
+            {
+                for (int i = 0; i < ds.Length; i++)
+                {
+                    ds.Samples[i].x = (double)i / (double)ds.SampleRate;
+                    float y = channel == WaveDump.WaveReader.Channel.LEFT ? wr0.left[i] : wr0.right[i];
+
+                    ds.Samples[i].y = y;
+
+                    sum += Math.Abs(y);
+                    if (Math.Abs(y) > max) max = Math.Abs(y);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < wr0.histogram.Length; i++)
+                {
+                    ds.Samples[i].x = (double)i / (double)ds.SampleRate;
+                    float y = wr0.histogram[i];
+
+                    ds.Samples[i].y = y;
+
+                    sum += Math.Abs(y);
+                    if (Math.Abs(y) > max) max = Math.Abs(y);
+                }
             }
 
-            double avg = sum / (double)ds.Length;
-            max = (float)avg * 15f;
+            double avg = sum / (double)ds.Samples.Length;
+            //max = (float)avg * 15f;
             ds.SetDisplayRangeY(-max, max);
             ds.SetGridDistanceY(max/10);
 
@@ -806,7 +825,8 @@ namespace GraficDisplay
                 
                 for (int j = 0; j < openFileDialog1.FileNames.Length; j++)
                 {
-                    display.DataSources.Add(createFileDataSource(openFileDialog1.FileNames[j]));
+                    if (j == 0) display.DataSources.Add(createFileDataSource(openFileDialog1.FileNames[j], WaveDump.WaveReader.Channel.LEFT));
+                    else display.DataSources.Add(createFileDataSource(openFileDialog1.FileNames[j], WaveDump.WaveReader.Channel.LEFT));
                     xmin = Math.Min(xmin, display.DataSources[j].XMin);
                     xmax = Math.Max(xmax, display.DataSources[j].XMax);
                 }
