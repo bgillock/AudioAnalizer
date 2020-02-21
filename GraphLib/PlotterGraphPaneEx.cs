@@ -107,7 +107,7 @@ namespace GraphLib
         PointF graphCaptionOffset = new PointF(12, 2);
 
         public float[] MinorGridPattern = new float[] { 2,4 };
-        public float[] MajorGridPattern = new float[] { 2,2  };
+        public float[] MajorGridPattern = new float[] { 1,2  };
 
         DashStyle MinorGridDashStyle = DashStyle.Custom;
         DashStyle MajorGridDashStyle = DashStyle.Custom;
@@ -224,7 +224,7 @@ namespace GraphLib
             int CurGraphIdx = 0;
             int VertTileCount = 1;
             int HorTileCount = 1;
-
+            double mult_x = 1;
             float curOffY = 0;
             float CurOffX = 0;
 
@@ -257,6 +257,9 @@ namespace GraphLib
                 }
             }
             float nextX = 0;
+            referencePoints = null;
+            comparePoints = null;
+
             foreach (DataSource source in sources)
             {
                 source.Cur_YD0 = source.YD0;
@@ -298,7 +301,7 @@ namespace GraphLib
                         int DownSample = source.Downsampling;
                         cPoint[] data = source.Samples;
                         float mult_y = source.CurGraphHeight / source.DY;
-                        double mult_x = source.CurGraphWidth / DX;
+                        mult_x = source.CurGraphWidth / DX;
                         float coff_x = off_X /*- (starting_idx * mult_x)*/;
 
                         if (source.AutoScaleX)
@@ -473,14 +476,28 @@ namespace GraphLib
                     }
 
                     List<Anno> marker_pos = DrawGraphCurve(CurGraphics, source, CurOffX, curOffY + (GraphCaptionLineHeight / 2));
-                    
+                    DrawXLines(CurGraphics, source, marker_pos, CurOffX, curOffY, Color.FromArgb(128, source.GraphColor.R/2, source.GraphColor.G/2, source.GraphColor.B/2));
+
+                    // Create gridx_pos for x annotation
+                    double gIncrement = (double)getGridIncrement(source);
+                    double startTick = (double)((int)(XD0 / gIncrement) + 1) * gIncrement;
+                    double endTick = (double)((int)(XD1 / gIncrement)) * gIncrement;
+                    mult_x = (double)source.CurGraphWidth / (double)DX;
+                    List<Anno> gridx_pos = new List<Anno>();
+                    for (double tick = startTick; tick <= endTick; tick += gIncrement)
+                    {
+                        int x = (int)((tick * mult_x) + off_X);
+                        gridx_pos.Add(new Anno(x, tick));
+                    }
                     if (layout == LayoutMode.NORMAL)
                     {
+                        if ((referencePoints != null) && (comparePoints != null)) source.RMSDiff = ComputeRMSDiff(referencePoints,comparePoints);
+
                         nextX += DrawGraphCaption(CurGraphics, source, nextX + CurOffX + (CurGraphIdx * (10 + yLabelAreaWidth)), curOffY);
 
                         if (CurGraphIdx == 0)
                         {
-                            DrawXLabels(CurGraphics, source, marker_pos, CurOffX, curOffY);
+                            DrawXLabels(CurGraphics, source, gridx_pos, CurOffX, curOffY);
                         }
 
                         DrawYLabels(CurGraphics, source, CurOffX + (yLabelAreaWidth * (CurGraphIdx - ActiveSources + 1)), curOffY);
@@ -489,18 +506,28 @@ namespace GraphLib
                     {
                         float tmp = DrawGraphCaption(CurGraphics, source, CurOffX, curOffY);
 
-                        DrawXLabels(CurGraphics, source, marker_pos, CurOffX, curOffY);
+                        DrawXLabels(CurGraphics, source, gridx_pos, CurOffX, curOffY);
 
                         DrawYLabels(CurGraphics, source, CurOffX, curOffY);
                     }
 
-                    
-
                     CurGraphIdx++;
                 }
             }
+            
         }
 
+        private double ComputeRMSDiff(List<Point> rPoints, List<Point> cPoints)
+        {
+            if ((rPoints == null) || (cPoints == null)) return -1;
+            if ((rPoints.Count != cPoints.Count) || (rPoints.Count == 0)) return -1;
+            double sum = 0;
+            for (int i=0; i < rPoints.Count; i++)
+            {
+                sum += ((double)rPoints[i].Y - (double)cPoints[i].Y) * ((double)rPoints[i].Y - (double)cPoints[i].Y);
+            }
+            return Math.Sqrt(sum/(double)rPoints.Count);
+        }
         private double getGridIncrement(DataSource source)
         {
             double gIncr = 0.001;
@@ -859,6 +886,10 @@ namespace GraphLib
             public int x;
             public double value;
         }
+
+        private List<Point> referencePoints = null;
+        private List<Point> comparePoints = null;
+
         private List<Anno> DrawGraphCurve( Graphics g, DataSource source,  float offset_x, float offset_y )
         {
             List<Anno> marker_positions = new List<Anno>();
@@ -866,10 +897,13 @@ namespace GraphLib
             if (DX != 0 && source.DY != 0)
             {
                 List<Point> ps = new List<Point>();
-               
+                source.DroppedSamples = 0;
                 if (source.Samples != null && source.Samples.Length > 1)
                 {
                     cPoint[] data = source.Samples;
+
+                    int startZero = 0;
+                    int endZero = 0;
                     float mult_y = source.CurGraphHeight / source.DY;
                     double mult_x = (double)source.CurGraphWidth / (double)DX; // DX = nsamples x direction on screen
                     float coff_x = off_X /*- (starting_idx * mult_x)*/;
@@ -884,6 +918,8 @@ namespace GraphLib
                     int DownSample = (int)((float)(endI-startI)/(float)(source.CurGraphWidth*10.0))+1;
                     for (int i = startI>=0?startI:0; i <= data.Length - 1 && i <= endI; i += DownSample)
                     {
+
+                        float flip = source.PhaseShift ? -1:1;
                         if (DownSample > 1)
                         {
                             float yMin = float.MaxValue;
@@ -891,14 +927,38 @@ namespace GraphLib
                             int j = i;
                             while (j < (i + DownSample) && (j <= data.Length - 1)) 
                             {
-                                yMax = data[j].y > yMax ? data[j].y : yMax;
-                                yMin = data[j].y < yMin ? data[j].y : yMin;
+                                if ((j > source.StartSample) && (j < source.EndSample)) 
+                                { 
+                                    if (data[j].y == 0)
+                                    {
+                                        if (startZero != 0) endZero = j;
+                                        else
+                                        {
+                                            startZero = j; endZero = j;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (endZero - startZero > 10)
+                                        {
+                                            marker_positions.Add(new Anno((int)(((float)((source.StartTime + data[startZero].x) * mult_x) + (double)coff_x) + offset_x + 0.5f),
+                                                                          (int)(((float)((source.StartTime + data[endZero].x) * mult_x) + (double)coff_x) + offset_x + 0.5f)));
+                                            source.DroppedSamples += endZero - startZero + 1;
+                                        }
+                                        startZero = 0;
+                                        endZero = 0;
+                                    }
+                                }
+                                 
+                                yMax = data[j].y*flip > yMax ? data[j].y*flip : yMax;
+                                yMin = data[j].y*flip < yMin ? data[j].y*flip : yMin;
                                 j++;
                             }
 
                             float x = (float)(((source.StartTime + data[i].x) * mult_x) + (double)coff_x);
                             float y0 = (yMax * mult_y) + source.off_Y;
                             float y1 = (yMin * mult_y) + source.off_Y;
+
                             if (x > 0 && x < (source.CurGraphWidth))
                             {
                                 ps.Add(new Point((int)(x + offset_x + 0.5f), (int)(y0 + offset_y + 0.5f)));
@@ -906,20 +966,52 @@ namespace GraphLib
                             }
                             else if (x > source.CurGraphWidth)
                             {
+                                if (endZero - startZero > 10)
+                                {
+                                    marker_positions.Add(new Anno((int)(((float)((source.StartTime + data[startZero].x) * mult_x) + (double)coff_x) + offset_x + 0.5f),
+                                                                     (int)(((float)((source.StartTime + data[endZero].x) * mult_x) + (double)coff_x) + offset_x + 0.5f)));
+                                }
                                 break;
                             }
                         }
                         else 
                         {
+                           
                             float x = (float)(((source.StartTime + data[i].x) * mult_x) + (double)coff_x);
-                            float y = (data[i].y * mult_y) + source.off_Y;
-
+                            float y = (data[i].y * flip * mult_y) + source.off_Y;
+                            
+                            if ((i > source.StartSample) && (i < source.EndSample))
+                            {
+                                if (data[i].y == 0)
+                                {
+                                    if (startZero != 0) endZero = i;
+                                    else
+                                    {
+                                        startZero = i; endZero = i;
+                                    }
+                                }
+                                else
+                                {
+                                    if (endZero - startZero > 10)
+                                    {
+                                        marker_positions.Add(new Anno((int)(((float)((source.StartTime + data[startZero].x) * mult_x) + (double)coff_x) + offset_x + 0.5f),
+                                                                      (int)(((float)((source.StartTime + data[endZero].x) * mult_x) + (double)coff_x) + offset_x + 0.5f)));
+                                    }
+                                    startZero = 0;
+                                    endZero = 0;
+                                }
+                            }
                             if (x > 0 && x < (source.CurGraphWidth))
                             {
                                 ps.Add(new Point((int)(x + offset_x + 0.5f), (int)(y + offset_y + 0.5f)));
                             }
                             else if (x > source.CurGraphWidth)
                             {
+                                if (endZero - startZero > 10)
+                                {
+                                    marker_positions.Add(new Anno((int)(((float)((source.StartTime + data[startZero].x) * mult_x) + (double)coff_x) + offset_x + 0.5f),
+                                                                     (int)(((float)((source.StartTime + data[endZero].x) * mult_x) + (double)coff_x) + offset_x + 0.5f)));
+                                }
                                 break;
                             }
                         }
@@ -931,18 +1023,15 @@ namespace GraphLib
                         {
                             if (ShowDots) g.DrawRectangles(p, createRectangles(ps).ToArray());
                             g.DrawLines(p, ps.ToArray());
+                            if (source.Name.Contains("CDRip"))
+                            {
+                                referencePoints = ps;
+                            }
+                            else
+                            {
+                                comparePoints = ps;
+                            }
                         }
-                    }
-
-                    // Create marker_positions for x annotation
-                    double gIncrement = (double)getGridIncrement(source);
-                    double startTick = (double)((int)(XD0 / gIncrement) + 1) * gIncrement;
-                    double endTick = (double)((int)(XD1 / gIncrement)) * gIncrement;
-                    
-                    for (double tick=startTick; tick<=endTick; tick+=gIncrement)
-                    {
-                        int x = (int)((tick * mult_x) + coff_x);
-                        marker_positions.Add(new Anno(x,tick));
                     }
                 }
             }
@@ -968,8 +1057,12 @@ namespace GraphLib
                     pen.DashPattern = MajorGridPattern;
 
                     nextX += g.MeasureString(source.Name, legendFont).Width;
-                   
-                    g.DrawString(source.Name, legendFont, brush, new PointF(offset_x + graphCaptionOffset.X + 12, offset_y +graphCaptionOffset.Y+ 2));
+                    string label = source.Name + " -" + source.DroppedSamples.ToString();
+                    if (source.RMSDiff > 0)
+                    {
+                        label += " RMSAmpDiff: " + source.RMSDiff;
+                    }
+                    g.DrawString(label, legendFont, brush, new PointF(offset_x + graphCaptionOffset.X + 12, offset_y +graphCaptionOffset.Y+ 2));
 
                 }
             }
@@ -1028,6 +1121,35 @@ namespace GraphLib
                                                     GraphCaptionLineHeight + offset_y + source.CurGraphHeight + unknownOffset));
 
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        private void DrawXLines(Graphics g, DataSource source, List<Anno> marker_pos, float offset_x, float offset_y, Color XLabColor)
+        {
+            using (Brush brush = new SolidBrush(XLabColor))
+            {
+                using (Pen pen = new Pen(brush))
+                {
+                    pen.DashStyle = DashStyle.Solid;
+
+                    if (DX != 0 && source.DY != 0)
+                    {
+
+                        foreach (Anno a in marker_pos)
+                        {
+
+                            /// TODO: find out how to calculate this offset. Must be padding + something else
+                            float unknownOffset = -12;// -14;
+                            int x0 = a.x;
+                            int x1 = (int)Math.Round(a.value);
+                            g.FillRectangle(brush, new Rectangle(x0, (int)Math.Round(offset_y),
+                                                                x1-x0+2, (int)Math.Round(source.CurGraphHeight + unknownOffset + GraphCaptionLineHeight)));
+                            //g.DrawLine(pen, x, offset_y + GraphCaptionLineHeight + source.CurGraphHeight + unknownOffset,
+                            //                x, offset_y + GraphCaptionLineHeight /* + source.CurGraphHeight */);
+                            
                         }
                     }
                 }

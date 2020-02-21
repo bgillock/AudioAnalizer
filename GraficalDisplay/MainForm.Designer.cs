@@ -33,6 +33,7 @@ namespace GraficDisplay
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -74,6 +75,7 @@ namespace GraficDisplay
             // 
             // menuStrip1
             // 
+            this.menuStrip1.BackColor = System.Drawing.SystemColors.ActiveCaptionText;
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
             this.layoutToolStripMenuItem});
@@ -87,6 +89,7 @@ namespace GraficDisplay
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.openToolStripMenuItem});
+            this.fileToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
@@ -105,6 +108,7 @@ namespace GraficDisplay
             this.examplesToolStripMenuItem,
             this.colorSchemesToolStripMenuItem,
             this.numGraphsToolStripMenuItem});
+            this.layoutToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
             this.layoutToolStripMenuItem.Name = "layoutToolStripMenuItem";
             this.layoutToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
             this.layoutToolStripMenuItem.Text = "Settings";
@@ -377,14 +381,15 @@ namespace GraficDisplay
             this.ClientSize = new System.Drawing.Size(1661, 748);
             this.Controls.Add(this.display);
             this.Controls.Add(this.menuStrip1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "MainForm";
-            this.Text = "GraphLib Demo";
+            this.Text = "BitRate27 - Digital Audio Channel Analyzer";
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
-
+            
         }
 
         #endregion

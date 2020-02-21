@@ -64,6 +64,7 @@ namespace GraphLib
             play_speed = 0.5f; // 20x10 = 200 values per second == sample frequency     
             // mTimer.Start();
             isRunning = false;
+            this.gPane.setDisplay(this);
         }
        
         void contextMenuStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
@@ -185,6 +186,10 @@ namespace GraphLib
 
         #region PUBLIC METHODS
 
+        public void setPhaseDataSource(DataSource ds, bool phase)
+        {
+            ds.PhaseShift = phase;
+        }
         public void SetDisplayRangeX(double x_start, double x_end )
         {
             gPane.XD0 = (float)x_start;
@@ -225,96 +230,7 @@ namespace GraphLib
             base.Dispose(disposing);
         }
 
-        public void Start()
-        {
-            if (isRunning == false && paused == false)
-            {
-                //gPane.starting_idx = 0;
-                paused = false;
-                isRunning = true;
-               // mTimer.Start();                
-                tb1.Buttons[0].ImageIndex = 2;                
-            }
-            else
-            {
-                if (paused == false)
-                {
-                    //mTimer.Stop();
-                    paused = true;
-                }
-                else
-                {
-                   // mTimer.Start();
-                    paused = false;
-                }
-
-                if (paused)
-                {
-                    
-                    tb1.Buttons[0].ImageIndex = 0;  
-                }
-                else
-                {
-                   
-                    tb1.Buttons[0].ImageIndex = 2;  
-                }
-            }
-        }
-
-        public void Stop()
-        {
-            if (isRunning)
-            {
-               // mTimer.Stop();
-                isRunning = false;
-                paused = false;
-                hScrollBar1.Value = 0;
-                tb1.Buttons[0].ImageIndex = 0;
-            }
-        }
-
        
-        private void tb1_ButtonClick(object sender, ToolBarButtonClickEventArgs e)
-        {
-            bool pushed = e.Button.Pushed;
-            switch (e.Button.Tag.ToString().ToLower())
-            {
-                case "play":
-
-                    Start();
-                      
-                    break;
-
-                case "stop":
-
-                    Stop();
-                   
-                    break;       
-              
-                case "print":
-
-                    // // todo implement print preview
-                    ShowPrintPreview();
-
-                    break;
-            }
-        }
-
-        private void SetPlayPanelVisible()
-        {
-            panel1.Visible = true;          
-            tb1.Buttons[0].Visible = true;
-            tb1.Buttons[1].Visible = true;
-        }
-
-        private void SetPlayPanelInvisible()
-        {
-            panel1.Visible = false;
-            tb1.Buttons[0].Visible = false;
-            tb1.Buttons[1].Visible = false;
-            
-        }
-
         private void UpdateControl()
         {
             try
@@ -331,14 +247,14 @@ namespace GraphLib
                 {
                     if (panel1.Visible == true)
                     {
-                        this.Invoke(new MethodInvoker(SetPlayPanelInvisible));
+                     //   this.Invoke(new MethodInvoker(SetPlayPanelInvisible));
                     }
                 }
                 else
                 {
                     if (panel1.Visible == false)
                     {
-                        this.Invoke(new MethodInvoker(SetPlayPanelVisible));
+                     //   this.Invoke(new MethodInvoker(SetPlayPanelVisible));
                     }
                 }
             }
@@ -520,6 +436,15 @@ namespace GraphLib
                     }
                     gPane.Invalidate();
                     break;
+            }
+        }
+
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            if (gPane.Sources.Count > 1)
+            {
+                setPhaseDataSource(gPane.Sources[1], checkBox1.Checked);
+                Refresh();
             }
         }
     }

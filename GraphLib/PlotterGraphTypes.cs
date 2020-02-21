@@ -51,19 +51,22 @@ namespace GraphLib
         private String name = String.Empty;
         private int downSample = 1;
         private Color color = Color.Black;
-
+        public int StartSample = 0;
+        public int EndSample = 0;
         public float VisibleDataRange_X = 0;
         public float DY = 0;      
         public float YD0 = -200;
         public float YD1 = 200;
         public float Cur_YD0 = -200;
         public float Cur_YD1 = 200;
-
+        public int DroppedSamples = 0;
+        public double RMSDiff = 0;
         public float grid_distance_y = 200;       // grid distance in units ( draw a horizontal line every 200 units )       
-
+ 
         public float off_Y = 0;
         public float grid_off_y = 0;
         public double StartTime = 0;
+        public bool PhaseShift = false; 
         public bool yFlip = true;      
         
         public bool Active = true;

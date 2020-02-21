@@ -57,6 +57,8 @@ namespace GraficDisplay
 
             UpdateColorSchemaMenu();
 
+            
+
             //mTimer = new PrecisionTimer.Timer();
             //mTimer.Period = 40;                         // 20 fps
             //mTimer.Tick += new EventHandler(OnTimerTick);
@@ -753,7 +755,17 @@ namespace GraficDisplay
             ds.Length = wr0.nSamples;
             ds.SampleRate = wr0.sampleRate;
             ds.AutoScaleY = false;
-            
+
+            // Set start and end sample of non-zero data.
+            for (ds.StartSample = 0;
+                (ds.StartSample < wr0.nSamples) &&
+                ((channel == WaveDump.WaveReader.Channel.LEFT ? wr0.left[ds.StartSample] : wr0.right[ds.StartSample]) == 0);
+                ds.StartSample++) ;
+            for (ds.EndSample = wr0.nSamples-1;
+                (ds.EndSample >=0 ) &&
+                ((channel == WaveDump.WaveReader.Channel.LEFT ? wr0.left[ds.EndSample] : wr0.right[ds.EndSample]) == 0);
+                ds.EndSample--) ;
+
             ds.OnRenderYAxisLabel = RenderYLabel;
             float max = float.MinValue;
             double sum = 0.0;
@@ -843,6 +855,5 @@ namespace GraficDisplay
         {
             System.Diagnostics.Debug.WriteLine("In mouse wheel");
         }
-
     }
 }

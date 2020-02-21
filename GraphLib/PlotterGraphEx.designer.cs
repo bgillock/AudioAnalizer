@@ -20,27 +20,21 @@ namespace GraphLib
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PlotterDisplayEx));
-            this.tb1 = new System.Windows.Forms.ToolBar();
-            this.tbbSave = new System.Windows.Forms.ToolBarButton();
-            this.tbbOpen = new System.Windows.Forms.ToolBarButton();
-            this.tbbSeparator3 = new System.Windows.Forms.ToolBarButton();
-            this.tbbPrint = new System.Windows.Forms.ToolBarButton();
-            this.toolBarButton2 = new System.Windows.Forms.ToolBarButton();
             this.imgList1 = new System.Windows.Forms.ImageList(this.components);
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.textBox2 = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
-            this.lb_Position = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.hScrollBar1 = new System.Windows.Forms.HScrollBar();
+            this.gPane = new GraphLib.PlotterGraphPaneEx();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.selectGraphsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.textBox2 = new System.Windows.Forms.TextBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.gPane = new GraphLib.PlotterGraphPaneEx();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -48,55 +42,6 @@ namespace GraphLib
             this.panel1.SuspendLayout();
             this.contextMenuStrip1.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // tb1
-            // 
-            this.tb1.Appearance = System.Windows.Forms.ToolBarAppearance.Flat;
-            this.tb1.Buttons.AddRange(new System.Windows.Forms.ToolBarButton[] {
-            this.tbbSave,
-            this.tbbOpen,
-            this.tbbSeparator3,
-            this.tbbPrint,
-            this.toolBarButton2});
-            this.tb1.ButtonSize = new System.Drawing.Size(16, 16);
-            this.tb1.Divider = false;
-            this.tb1.Dock = System.Windows.Forms.DockStyle.None;
-            this.tb1.DropDownArrows = true;
-            this.tb1.ImageList = this.imgList1;
-            this.tb1.Location = new System.Drawing.Point(11, 5);
-            this.tb1.Name = "tb1";
-            this.tb1.ShowToolTips = true;
-            this.tb1.Size = new System.Drawing.Size(80, 26);
-            this.tb1.TabIndex = 1;
-            this.tb1.ButtonClick += new System.Windows.Forms.ToolBarButtonClickEventHandler(this.tb1_ButtonClick);
-            // 
-            // tbbSave
-            // 
-            this.tbbSave.ImageIndex = 0;
-            this.tbbSave.Name = "tbbSave";
-            this.tbbSave.Tag = "play";
-            // 
-            // tbbOpen
-            // 
-            this.tbbOpen.ImageIndex = 1;
-            this.tbbOpen.Name = "tbbOpen";
-            this.tbbOpen.Tag = "stop";
-            // 
-            // tbbSeparator3
-            // 
-            this.tbbSeparator3.Name = "tbbSeparator3";
-            this.tbbSeparator3.Style = System.Windows.Forms.ToolBarButtonStyle.Separator;
-            // 
-            // tbbPrint
-            // 
-            this.tbbPrint.ImageIndex = 3;
-            this.tbbPrint.Name = "tbbPrint";
-            this.tbbPrint.Tag = "print";
-            // 
-            // toolBarButton2
-            // 
-            this.toolBarButton2.Name = "toolBarButton2";
-            this.toolBarButton2.Style = System.Windows.Forms.ToolBarButtonStyle.Separator;
             // 
             // imgList1
             // 
@@ -119,39 +64,75 @@ namespace GraphLib
             // 
             // splitContainer1.Panel1
             // 
-            this.splitContainer1.Panel1.BackColor = System.Drawing.SystemColors.ControlDarkDark;
-            this.splitContainer1.Panel1.Controls.Add(this.tb1);
+            this.splitContainer1.Panel1.BackColor = System.Drawing.SystemColors.ControlText;
             this.splitContainer1.Panel1.Controls.Add(this.panel1);
             // 
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.BackColor = System.Drawing.Color.Transparent;
             this.splitContainer1.Panel2.Controls.Add(this.gPane);
-            this.splitContainer1.Size = new System.Drawing.Size(802, 339);
-            this.splitContainer1.SplitterDistance = 34;
+            this.splitContainer1.Size = new System.Drawing.Size(1660, 339);
+            this.splitContainer1.SplitterDistance = 54;
             this.splitContainer1.TabIndex = 2;
             this.splitContainer1.TabStop = false;
             // 
             // panel1
             // 
+            this.panel1.BackColor = System.Drawing.SystemColors.WindowText;
+            this.panel1.Controls.Add(this.checkBox1);
             this.panel1.Controls.Add(this.label3);
             this.panel1.Controls.Add(this.textBox2);
             this.panel1.Controls.Add(this.label2);
             this.panel1.Controls.Add(this.textBox1);
             this.panel1.Controls.Add(this.comboBox1);
-            this.panel1.Controls.Add(this.lb_Position);
             this.panel1.Controls.Add(this.label1);
             this.panel1.Controls.Add(this.hScrollBar1);
-            this.panel1.Location = new System.Drawing.Point(99, 3);
+            this.panel1.Location = new System.Drawing.Point(3, 3);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(700, 28);
+            this.panel1.Size = new System.Drawing.Size(1654, 53);
             this.panel1.TabIndex = 7;
+            // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.BackColor = System.Drawing.SystemColors.ActiveCaptionText;
+            this.checkBox1.ForeColor = System.Drawing.SystemColors.ControlLightLight;
+            this.checkBox1.Location = new System.Drawing.Point(518, 8);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(42, 17);
+            this.checkBox1.TabIndex = 10;
+            this.checkBox1.Text = "Flip";
+            this.checkBox1.UseVisualStyleBackColor = false;
+            this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.ForeColor = System.Drawing.SystemColors.ControlLightLight;
+            this.label3.Location = new System.Drawing.Point(335, 9);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(41, 13);
+            this.label3.TabIndex = 9;
+            this.label3.Text = "ScaleY";
+            // 
+            // textBox2
+            // 
+            this.textBox2.BackColor = System.Drawing.SystemColors.ControlDarkDark;
+            this.textBox2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.textBox2.ForeColor = System.Drawing.SystemColors.ButtonFace;
+            this.textBox2.Location = new System.Drawing.Point(383, 5);
+            this.textBox2.Margin = new System.Windows.Forms.Padding(4);
+            this.textBox2.Name = "textBox2";
+            this.textBox2.Size = new System.Drawing.Size(128, 20);
+            this.textBox2.TabIndex = 8;
+            this.textBox2.Text = "0.0";
+            this.textBox2.KeyUp += new System.Windows.Forms.KeyEventHandler(this.textBox2_KeyUp);
             // 
             // label2
             // 
             this.label2.AutoSize = true;
             this.label2.ForeColor = System.Drawing.SystemColors.ControlLightLight;
-            this.label2.Location = new System.Drawing.Point(338, 7);
+            this.label2.Location = new System.Drawing.Point(152, 9);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(35, 13);
             this.label2.TabIndex = 7;
@@ -159,7 +140,11 @@ namespace GraphLib
             // 
             // textBox1
             // 
-            this.textBox1.Location = new System.Drawing.Point(376, 4);
+            this.textBox1.BackColor = System.Drawing.SystemColors.ControlDarkDark;
+            this.textBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.textBox1.ForeColor = System.Drawing.SystemColors.Window;
+            this.textBox1.Location = new System.Drawing.Point(189, 5);
+            this.textBox1.Margin = new System.Windows.Forms.Padding(4);
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(139, 20);
             this.textBox1.TabIndex = 6;
@@ -168,6 +153,10 @@ namespace GraphLib
             // 
             // comboBox1
             // 
+            this.comboBox1.BackColor = System.Drawing.Color.DimGray;
+            this.comboBox1.CausesValidation = false;
+            this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBox1.ForeColor = System.Drawing.SystemColors.Window;
             this.comboBox1.FormattingEnabled = true;
             this.comboBox1.Items.AddRange(new object[] {
             "10",
@@ -179,28 +168,17 @@ namespace GraphLib
             "0.001",
             "0.0001",
             "<All>"});
-            this.comboBox1.Location = new System.Drawing.Point(243, 4);
+            this.comboBox1.Location = new System.Drawing.Point(56, 4);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(90, 21);
             this.comboBox1.TabIndex = 5;
-            this.comboBox1.Text = "<All>";
             this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
-            // 
-            // lb_Position
-            // 
-            this.lb_Position.AutoSize = true;
-            this.lb_Position.ForeColor = System.Drawing.SystemColors.ControlLightLight;
-            this.lb_Position.Location = new System.Drawing.Point(6, 8);
-            this.lb_Position.Name = "lb_Position";
-            this.lb_Position.Size = new System.Drawing.Size(44, 13);
-            this.lb_Position.TabIndex = 3;
-            this.lb_Position.Text = "Position";
             // 
             // label1
             // 
             this.label1.AutoSize = true;
             this.label1.ForeColor = System.Drawing.SystemColors.ControlLightLight;
-            this.label1.Location = new System.Drawing.Point(193, 7);
+            this.label1.Location = new System.Drawing.Point(6, 9);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(44, 13);
             this.label1.TabIndex = 2;
@@ -208,12 +186,22 @@ namespace GraphLib
             // 
             // hScrollBar1
             // 
-            this.hScrollBar1.Location = new System.Drawing.Point(57, 10);
+            this.hScrollBar1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.hScrollBar1.Location = new System.Drawing.Point(-3, 33);
             this.hScrollBar1.Maximum = 10000;
             this.hScrollBar1.Name = "hScrollBar1";
-            this.hScrollBar1.Size = new System.Drawing.Size(118, 10);
+            this.hScrollBar1.Size = new System.Drawing.Size(1654, 15);
             this.hScrollBar1.TabIndex = 4;
             this.hScrollBar1.Scroll += new System.Windows.Forms.ScrollEventHandler(this.OnScrollbarScroll);
+            // 
+            // gPane
+            // 
+            this.gPane.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gPane.Location = new System.Drawing.Point(0, 0);
+            this.gPane.Name = "gPane";
+            this.gPane.Size = new System.Drawing.Size(1660, 281);
+            this.gPane.TabIndex = 1;
             // 
             // contextMenuStrip1
             // 
@@ -235,33 +223,6 @@ namespace GraphLib
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(113, 6);
             // 
-            // textBox2
-            // 
-            this.textBox2.Location = new System.Drawing.Point(569, 4);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(128, 20);
-            this.textBox2.TabIndex = 8;
-            this.textBox2.Text = "0.0";
-            this.textBox2.KeyUp += new System.Windows.Forms.KeyEventHandler(this.textBox2_KeyUp);
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.ForeColor = System.Drawing.SystemColors.ControlLightLight;
-            this.label3.Location = new System.Drawing.Point(522, 7);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(41, 13);
-            this.label3.TabIndex = 9;
-            this.label3.Text = "ScaleY";
-            // 
-            // gPane
-            // 
-            this.gPane.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.gPane.Location = new System.Drawing.Point(0, 0);
-            this.gPane.Name = "gPane";
-            this.gPane.Size = new System.Drawing.Size(802, 301);
-            this.gPane.TabIndex = 1;
-            // 
             // PlotterDisplayEx
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -270,9 +231,8 @@ namespace GraphLib
             this.ContextMenuStrip = this.contextMenuStrip1;
             this.Controls.Add(this.splitContainer1);
             this.Name = "PlotterDisplayEx";
-            this.Size = new System.Drawing.Size(802, 339);
+            this.Size = new System.Drawing.Size(1660, 339);
             this.splitContainer1.Panel1.ResumeLayout(false);
-            this.splitContainer1.Panel1.PerformLayout();
             this.splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
@@ -280,31 +240,24 @@ namespace GraphLib
             this.panel1.PerformLayout();
             this.contextMenuStrip1.ResumeLayout(false);
             this.ResumeLayout(false);
-            this.gPane.setDisplay(this);
+
         }
 
         #endregion
-
-        private System.Windows.Forms.ToolBar tb1;
-        private System.Windows.Forms.ToolBarButton tbbSeparator3;
         private System.Windows.Forms.SplitContainer splitContainer1;
-        private System.Windows.Forms.ToolBarButton tbbSave;
-        private System.Windows.Forms.ToolBarButton tbbOpen;
         public System.Windows.Forms.HScrollBar hScrollBar1;
         private PlotterGraphPaneEx gPane;
-        private System.Windows.Forms.Label lb_Position;
         private System.Windows.Forms.Label label1;
         public System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
         private System.Windows.Forms.ToolStripMenuItem selectGraphsToolStripMenuItem;
         private System.Windows.Forms.ImageList imgList1;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-        private System.Windows.Forms.ToolBarButton tbbPrint;
-        private System.Windows.Forms.ToolBarButton toolBarButton2;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.ComboBox comboBox1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.CheckBox checkBox1;
     }
 }
