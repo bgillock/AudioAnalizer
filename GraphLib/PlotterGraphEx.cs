@@ -189,6 +189,11 @@ namespace GraphLib
         public void setPhaseDataSource(DataSource ds, bool phase)
         {
             ds.PhaseShift = phase;
+            this.checkBox1.Checked = phase;
+        }
+        public void setStartTime(double st)
+        {
+            this.textBox3.Text = st.ToString();
         }
         public void SetDisplayRangeX(double x_start, double x_end )
         {
@@ -322,8 +327,11 @@ namespace GraphLib
             else
             {
                 textBox1.Text = gPane.Sources[1].StartTime.ToString();
+                textBox3.Text = gPane.XD0.ToString();
             }
         }
+
+
         public void UpdateYScale()
         {
             if (InvokeRequired)
@@ -344,6 +352,7 @@ namespace GraphLib
                 gPane.XD0 = val;
                 gPane.XD1 = val + size;
                 gPane.Invalidate();
+                UpdateShift();
             }
         }
         #endregion
@@ -445,6 +454,22 @@ namespace GraphLib
             {
                 setPhaseDataSource(gPane.Sources[1], checkBox1.Checked);
                 Refresh();
+            }
+        }
+
+        private void textBox3_KeyUp_1(object sender, KeyEventArgs e)
+        {
+            switch ((int)e.KeyCode)
+            {
+                case 13: // Enter
+                    if (gPane.Sources.Count > 1)
+                    {
+                        double newStartTime = double.Parse(textBox3.Text);
+                        double sizeX = gPane.XD1 - gPane.XD0;
+                        SetDisplayRangeX(newStartTime, newStartTime + sizeX);
+                        Refresh();
+                    }
+                    break;
             }
         }
     }

@@ -348,7 +348,7 @@ namespace GraficDisplay
                     xmin = Math.Min(xmin, display.DataSources[j].XMin);
                     xmax = Math.Max(xmax, display.DataSources[j].XMax);
                 }
-
+                
                 display.SetFullRangeX(xmin, xmax);
                 display.SetDisplayRangeX(xmin, xmax);
                 display.UpdateYScale();
@@ -845,6 +845,8 @@ namespace GraficDisplay
                 ApplyColorSchema();
                 
                 display.SetDisplayRangeX(xmin,xmax);
+                display.setPhaseDataSource(display.DataSources[1], false);
+                display.setStartTime(xmin);
                 display.UpdateYScale();
                 this.ResumeLayout();
                 display.Refresh();

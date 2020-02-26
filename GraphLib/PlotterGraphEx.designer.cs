@@ -23,6 +23,7 @@ namespace GraphLib
             this.imgList1 = new System.Windows.Forms.ImageList(this.components);
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.textBox3 = new System.Windows.Forms.TextBox();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.label3 = new System.Windows.Forms.Label();
             this.textBox2 = new System.Windows.Forms.TextBox();
@@ -79,6 +80,7 @@ namespace GraphLib
             // panel1
             // 
             this.panel1.BackColor = System.Drawing.SystemColors.WindowText;
+            this.panel1.Controls.Add(this.textBox3);
             this.panel1.Controls.Add(this.checkBox1);
             this.panel1.Controls.Add(this.label3);
             this.panel1.Controls.Add(this.textBox2);
@@ -91,6 +93,19 @@ namespace GraphLib
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(1654, 53);
             this.panel1.TabIndex = 7;
+            // 
+            // textBox3
+            // 
+            this.textBox3.BackColor = System.Drawing.SystemColors.ControlDarkDark;
+            this.textBox3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.textBox3.ForeColor = System.Drawing.SystemColors.ButtonFace;
+            this.textBox3.Location = new System.Drawing.Point(567, 5);
+            this.textBox3.Margin = new System.Windows.Forms.Padding(4);
+            this.textBox3.Name = "textBox3";
+            this.textBox3.Size = new System.Drawing.Size(128, 20);
+            this.textBox3.TabIndex = 11;
+            this.textBox3.Text = "0.0";
+            this.textBox3.KeyUp += new System.Windows.Forms.KeyEventHandler(this.textBox3_KeyUp_1);
             // 
             // checkBox1
             // 
@@ -259,5 +274,6 @@ namespace GraphLib
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox textBox2;
         private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.TextBox textBox3;
     }
 }

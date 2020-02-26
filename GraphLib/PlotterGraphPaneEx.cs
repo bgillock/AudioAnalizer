@@ -211,6 +211,7 @@ namespace GraphLib
                 }
                 
                 Invalidate();
+                display.UpdateShift();
             }
         }
 
@@ -491,7 +492,7 @@ namespace GraphLib
                     }
                     if (layout == LayoutMode.NORMAL)
                     {
-                        if ((referencePoints != null) && (comparePoints != null)) source.RMSDiff = ComputeRMSDiff(referencePoints,comparePoints);
+                        if ((referencePoints != null) && (comparePoints != null)) source.RMSDiff = ComputeActualRMSDiff(referencePoints,comparePoints);
 
                         nextX += DrawGraphCaption(CurGraphics, source, nextX + CurOffX + (CurGraphIdx * (10 + yLabelAreaWidth)), curOffY);
 
@@ -527,6 +528,29 @@ namespace GraphLib
                 sum += ((double)rPoints[i].Y - (double)cPoints[i].Y) * ((double)rPoints[i].Y - (double)cPoints[i].Y);
             }
             return Math.Sqrt(sum/(double)rPoints.Count);
+        }
+
+        private double ComputeActualRMSDiff(DataSource reference, DataSource compare)
+        {
+            double cScaleFactor = reference.YD1 / compare.YD1;
+            if (compare.PhaseShift) cScaleFactor *= -1;
+            int startRI = (int)((XD0 - reference.StartTime) * reference.SampleRate);
+            int endRI = (int)((XD1 - reference.StartTime) * reference.SampleRate);
+            int startCI = (int)((XD0 - compare.StartTime) * compare.SampleRate);
+            int endCI = (int)((XD1 - compare.StartTime) * compare.SampleRate);
+            if (startRI < 0) startRI = 0;
+            if (startCI < 0) startCI = 0;
+            if (endRI >= reference.Samples.Length) endRI = reference.Samples.Length - 1;
+            if (endCI >= compare.Samples.Length) endCI = compare.Samples.Length - 1;
+            double sum = 0;
+            int c = startCI;
+            for (int r = startRI; r <= endRI; r++)
+            {
+                sum += ((double)reference.Samples[r].y - (double)compare.Samples[c].y*cScaleFactor) * ((double)reference.Samples[r].y - (double)compare.Samples[c].y*cScaleFactor);
+                c++;
+                if (c > endCI) break;
+            }
+            return Math.Sqrt(sum / (double)(endCI - startCI + 1));
         }
         private double getGridIncrement(DataSource source)
         {
@@ -887,8 +911,8 @@ namespace GraphLib
             public double value;
         }
 
-        private List<Point> referencePoints = null;
-        private List<Point> comparePoints = null;
+        private DataSource referencePoints = null;
+        private DataSource comparePoints = null;
 
         private List<Anno> DrawGraphCurve( Graphics g, DataSource source,  float offset_x, float offset_y )
         {
@@ -1025,11 +1049,11 @@ namespace GraphLib
                             g.DrawLines(p, ps.ToArray());
                             if (source.Name.Contains("CDRip"))
                             {
-                                referencePoints = ps;
+                                referencePoints = source;
                             }
                             else
                             {
-                                comparePoints = ps;
+                                comparePoints = source;
                             }
                         }
                     }
