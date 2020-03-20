@@ -156,6 +156,29 @@ namespace WaveDump
             }
             return output;
         }
+        private unsafe int GetU24(ref byte[] input, int index)
+        {
+            int output = 0;
+            try
+            {
+                    byte[] b24 = new byte[4];
+                    b24[0] = input[index + 2];
+                    b24[1] = input[index + 1];
+                    b24[2] = input[index];
+                    b24[3] = 0x00;
+                fixed (byte* b = b24)
+                    {
+                        byte* c = b;
+
+                        int* i = (int*)c;
+                        output = *i;
+                    }
+            }
+            catch (Exception ex)
+            {
+            }
+            return output;
+        }
         private unsafe void Set24(ref byte[] input, int index, int s)
         {
             int output = 0;

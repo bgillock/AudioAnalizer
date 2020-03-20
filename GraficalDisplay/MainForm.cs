@@ -40,8 +40,8 @@ namespace GraficDisplay
         private String CurColorSchema = "BLACK";
         //private PrecisionTimer.Timer mTimer = null;
         private DateTime lastTimerTick = DateTime.Now;
-        private String ReferenceFileName = @"C:\Users\bgill\Desktop\Sound\Music\Pneuma - CDRip.wav";
-        private String CompareFileName = @"C:\Users\bgill\Desktop\Sound\Music\Pneuma [S_AUS;P_AM].wav";
+        private String ReferenceFileName = @"C:\Users\bgill\Desktop\Sound\Music\Parachutes - CDRip.wav";
+        private String CompareFileName = @"C:\Users\bgill\Desktop\Sound\Music\Parachutes [S_RSM;P_SW].wav";
 
         public MainForm()
         {           
@@ -817,8 +817,8 @@ namespace GraficDisplay
                 CheckPathExists = true,
                 Multiselect = true,
                 DefaultExt = "wav",
-                Filter = "wav files (*.wav)|*.wav",
-                FilterIndex = 2,
+                Filter = "wav files (*.wav)|*.wav|flac files (*.flac)|*.flac",
+                FilterIndex = 1,
                 RestoreDirectory = true,
 
                 ReadOnlyChecked = true,
@@ -837,11 +837,22 @@ namespace GraficDisplay
                 
                 for (int j = 0; j < openFileDialog1.FileNames.Length; j++)
                 {
-                    if (j == 0) display.DataSources.Add(createFileDataSource(openFileDialog1.FileNames[j], WaveDump.WaveReader.Channel.LEFT));
-                    else display.DataSources.Add(createFileDataSource(openFileDialog1.FileNames[j], WaveDump.WaveReader.Channel.LEFT));
-                    xmin = Math.Min(xmin, display.DataSources[j].XMin);
-                    xmax = Math.Max(xmax, display.DataSources[j].XMax);
+                    string ext = Path.GetExtension(openFileDialog1.FileNames[j]);
+                    if (ext == ".flac")
+                    {
+                        var fr0 = new WaveDump.FlacReader(openFileDialog1.FileNames[j]);
+                    }
+                    else
+                    {
+                        if (j == 0) display.DataSources.Add(createFileDataSource(openFileDialog1.FileNames[j], WaveDump.WaveReader.Channel.LEFT));
+                        else display.DataSources.Add(createFileDataSource(openFileDialog1.FileNames[j], WaveDump.WaveReader.Channel.LEFT));
+                        xmin = Math.Min(xmin, display.DataSources[j].XMin);
+                        xmax = Math.Max(xmax, display.DataSources[j].XMax);
+                    }
                 }
+
+                if (display.DataSources.Count < 2) return;
+
                 ApplyColorSchema();
                 
                 display.SetDisplayRangeX(xmin,xmax);

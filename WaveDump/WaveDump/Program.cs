@@ -33,8 +33,15 @@ namespace WaveDump
 
             if (args.Length == 1)
             {
-                var wr0 = new WaveReader(args[0]);
-                wr0.Dump();
+                if (System.IO.Path.GetExtension(fileName) == "flac")
+                {
+                    var wr0 = new FlacReader(args[0]);
+                }
+                else
+                {
+                    var wr0 = new WaveReader(args[0]);
+                    wr0.Dump();
+                }
                 return;
             }
             if (!System.IO.File.Exists(args[0])) { System.Console.WriteLine("File " + args[0] + " does not exist."); return; }

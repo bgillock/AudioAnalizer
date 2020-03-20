@@ -69,6 +69,7 @@
   <ItemGroup>
     <Compile Include="Correlate.cs" />
     <Compile Include="FFT.cs" />
+    <Compile Include="FlacReader.cs" />
     <Compile Include="FloatUtils.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
