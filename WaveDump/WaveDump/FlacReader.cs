@@ -100,10 +100,10 @@ namespace WaveDump
 
         struct SubStreamInfo
         {
-            public int sampleRate;
-            public short numChannels;
-            public short bitsPerSample;
-            public long totalSamplesInStream;
+            public uint sampleRate;
+            public uint numChannels;
+            public uint bitsPerSample;
+            public ulong totalSamplesInStream;
         } 
         private unsafe SubStreamInfo GetSubStreamInfo(ref byte[] input, int index)
         {
@@ -114,6 +114,64 @@ namespace WaveDump
                 bitsPerSample = 15,
                 totalSamplesInStream = 1000000
             };
+
+            // Extract sampleRate
+            byte[] b24 = new byte[4];
+            b24[0] = input[index + 2];
+            b24[1] = input[index + 1];
+            b24[2] = input[index];
+            b24[3] = 0x00;
+            fixed (byte* b = b24)
+            {
+                uint* i = (uint*)b;
+                uint si = *i >> 4;
+                ss.sampleRate = si;
+            }
+
+            // Extract numChannels
+            byte mask = 0x0E;
+            b24[0] = (byte)(input[index + 2] & mask);
+            b24[1] = 0x00;
+            b24[2] = 0x00;
+            b24[3] = 0x00;
+            fixed (byte* b = b24)
+            {
+                uint* i = (uint*)b;
+                uint si = *i >> 1;
+                ss.numChannels = si;
+            }
+
+            // Extract bitsPerSample
+            mask = 0xF0;
+            b24[0] = (byte)(input[index + 3] & mask);
+            mask = 0x01;
+            b24[1] = (byte)(input[index + 2] & mask);
+            b24[2] = 0x00;
+            b24[3] = 0x00;
+            fixed (byte* b = b24)
+            {
+                uint* i = (uint*)b;
+                uint si = *i >> 4;
+                ss.bitsPerSample = si;
+            }
+
+            // Extract totalSamples
+            byte[] b64 = new byte[8];
+            b64[0] = input[index + 7];
+            b64[1] = input[index + 6];
+            b64[2] = input[index + 5];
+            b64[3] = input[index + 4];
+            mask = 0x0F;
+            b64[4] = (byte)(input[index + 3] & mask);
+            b64[5] = 0x00;
+            b64[6] = 0x00;
+            b64[7] = 0x00;
+            fixed (byte* b = b64)
+            {
+                ulong* i = (ulong*)b;
+                ulong si = *i;
+                ss.totalSamplesInStream = si;
+            }
             return ss;
         }
         private byte[] readChunk(BinaryReader reader, string desiredChunkID)
