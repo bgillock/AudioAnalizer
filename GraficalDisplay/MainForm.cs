@@ -40,8 +40,8 @@ namespace GraficDisplay
         private String CurColorSchema = "BLACK";
         //private PrecisionTimer.Timer mTimer = null;
         private DateTime lastTimerTick = DateTime.Now;
-        private String ReferenceFileName = @"C:\Users\bgill\Desktop\Sound\Music\Parachutes - CDRip.wav";
-        private String CompareFileName = @"C:\Users\bgill\Desktop\Sound\Music\Parachutes [S_RSM;P_SW].wav";
+        private String ReferenceFileName = @"C:\Users\bgill\Desktop\Sound\Music\Hoff Innocence 441 16 - CDRip.flac";
+        private String CompareFileName = @"C:\Users\bgill\Desktop\Sound\Music\Hoff Innocence 441 16.flac";
 
         public MainForm()
         {           
@@ -751,7 +751,13 @@ namespace GraficDisplay
             DataSource ds = new DataSource();
             ds.Name = Path.GetFileNameWithoutExtension(filename);
             ds.OnRenderXAxisLabel += RenderXLabel;
-            WaveDump.WaveReader wr0 = new WaveDump.WaveReader(filename);
+            string ext = Path.GetExtension(filename);
+            WaveDump.FlacReader wr0 = null;
+            if (ext == ".flac")
+            {
+                wr0 = new WaveDump.FlacReader(filename);
+            }
+
             ds.Length = wr0.nSamples;
             ds.SampleRate = wr0.sampleRate;
             ds.AutoScaleY = false;

@@ -396,8 +396,69 @@ namespace WaveDump
         public string vendor;
         public List<string> comments;
 
-
         public FlacReader(string fileName)
+        {
+            _fname = fileName;
+            System.Diagnostics.Debug.WriteLine("Filename=" + _fname);
+            int bps;
+            int[][] samples = Decoder.Decode(_fname, out sampleRate, out bps);
+            bitsPerSample = (short)bps;
+            nSamples = samples[0].Length;
+            numChannels = (short)samples.Length;
+            trackLength = nSamples / (double)sampleRate;
+            left = new float[nSamples];
+            right = new float[nSamples];
+
+            int histogramSize = (int)Math.Pow(2, (double)bitsPerSample);
+            histogram = new int[histogramSize];
+            for (int i = 0; i < histogramSize; i++) histogram[i] = 0;
+
+            int startSample = 0;
+
+            int endSample = nSamples - 1;
+
+            int sample = startSample;
+
+            while (sample <= endSample)
+            {
+                left[sample] = 0;
+                if (bitsPerSample == 16)
+                {
+                    short l = (short)samples[0][sample];
+                    int hi = l + (histogramSize / 2);
+                    if ((hi >= 0) && (hi < histogram.Length)) histogram[hi]++;
+                    left[sample] = (float)l;
+                }
+                if (bitsPerSample == 24)
+                {
+                    int s = samples[0][sample];
+                    int hi = s + (histogramSize / 2);
+                    if ((hi >= 0) && (hi < histogram.Length)) histogram[hi]++;
+                    left[sample] = (float)s;
+                }
+
+
+                right[sample] = 0;
+
+                if (numChannels > 1)
+                {
+                    if (bitsPerSample == 16)
+                    {
+                        short r = (short)samples[1][sample];
+                        right[sample] = (float)r;
+                    }
+                    if (bitsPerSample == 24)
+                    {
+                        int s = samples[1][sample];
+                        right[sample] = (float)s;
+                    }
+                }
+
+                sample++;
+            }
+        }
+
+        public void FlacReaderOrig(string fileName)
         {
 
             _fname = fileName;
@@ -515,10 +576,10 @@ namespace WaveDump
             System.Diagnostics.Debug.WriteLine("totalSamplesInStream=" + totalSamplesInStream);
             System.Diagnostics.Debug.WriteLine("md5=" + md5);
             System.Diagnostics.Debug.WriteLine("vendor=" + vendor);
-            foreach (string c in comments)
-            {
-                System.Diagnostics.Debug.WriteLine("comment=" + c);
-            }
+            //foreach (string c in comments)
+            //{
+            //    System.Diagnostics.Debug.WriteLine("comment=" + c);
+            //}
         }
         
     }
