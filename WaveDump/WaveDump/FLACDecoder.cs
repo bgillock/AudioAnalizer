@@ -5,15 +5,24 @@ using System.IO;
 using System.Security.Cryptography;
 
 namespace WaveDump {
-	internal static class Decoder {
-		
+	public class FlacReader : AudioReader
+	{
 		/// <summary>Decodes the specified native FLAC file and extracts the raw samples.</summary>
 		/// <param name="file">The path to the native FLAC file.</param>
-		/// <param name="sampleRate">Receives the sample rate in Hz.</param>
-		/// <param name="bitsPerSample">Receives the number of bits per sample.</param>
 		/// <returns>The raw samples per channel, padded into the most-significant bits (makes all samples 32-bits wide and signed).</returns>
-		internal static int[][] Decode(string file, out int sampleRate, out int bitsPerSample) {
+		public string md5String;
+		private string GetHexString(ref byte[] input, int index, int size)
+        {
+            StringBuilder hex = new StringBuilder(size * 2);
+            for (int i = index; i < index + size; i++)
+            {
+                hex.AppendFormat("{0:x2}", input[i]);
+            }
+            return hex.ToString();
+        }
+		pubic FlacReader(string file) {
 			unchecked {
+				base(file);
 				byte[] bytes = File.ReadAllBytes(file);
 				BitReader reader = new BitReader(bytes);
 				// --- identifier ---
@@ -22,7 +31,7 @@ namespace WaveDump {
 				}
 				sampleRate = 0;
 				bitsPerSample = 0;
-				int numberOfChannels = 0;
+				numChannels = 0;
 				int totalNumberOfSamples = 0;
 				bool streaminfoPresent = false;
 				byte[] md5 = null;
@@ -57,7 +66,7 @@ namespace WaveDump {
 						if (sampleRate == 0 | sampleRate > 655350) {
 							throw new InvalidDataException();
 						}
-						numberOfChannels = (int)reader.ReadBits(3) + 1;
+						numChannels = (int)reader.ReadBits(3) + 1;
 						bitsPerSample = (int)reader.ReadBits(5) + 1;
 						if (bitsPerSample < 4) {
 							throw new InvalidDataException();
@@ -72,6 +81,7 @@ namespace WaveDump {
 							throw new NotSupportedException("Too many samples for this decoder.");
 						}
 						md5 = reader.ReadBytes(16);
+						md5String = GetHexString(md5,0,16);
 						streaminfoPresent = true;
 					} else if (blockType >= 1 & blockType <= 6) {
 						// --- ignored ---
@@ -88,11 +98,12 @@ namespace WaveDump {
 				if (!streaminfoPresent) {
 					throw new InvalidDataException();
 				}
-				int[][] samples = new int[numberOfChannels][];
+				int[][] samples = new int[numChannels][];
 				int sampleCount = totalNumberOfSamples != 0 ? (int)totalNumberOfSamples : 65536;
-				for (int i = 0; i < numberOfChannels; i++) {
+				for (int i = 0; i < numChannels; i++) {
 					samples[i] = new int[sampleCount];
 				}
+				nSamples = sampleCount;
 				int samplesUsed = 0;
 				// --- frames ---
 				while (!reader.EndOfStream()) {
@@ -188,11 +199,11 @@ namespace WaveDump {
 					// --- subframes ---
 					while (samplesUsed + blockNumberOfSamples > sampleCount) {
 						sampleCount <<= 1;
-						for (int i = 0; i < numberOfChannels; i++) {
+						for (int i = 0; i < numChannels; i++) {
 							Array.Resize<int>(ref samples[i], (int)sampleCount);
 						}
 					}
-					for (int i = 0; i < numberOfChannels; i++) {
+					for (int i = 0; i < numChannels; i++) {
 						uint zero = reader.ReadBit();
 						if (zero != 0) {
 							throw new InvalidDataException();
@@ -408,10 +419,10 @@ namespace WaveDump {
 				if (md5Set) {
 					if (bitsPerSample == 8) {
 						/* For 8 bits per sample */
-						bytes = new byte[numberOfChannels * samplesUsed];
+						bytes = new byte[numChannels * samplesUsed];
 						int pos = 0;
 						for (int i = 0; i < samplesUsed; i++) {
-							for (int j = 0; j < numberOfChannels; j++) {
+							for (int j = 0; j < numChannels; j++) {
 								bytes[pos] = (byte)(samples[j][i] >> 24);
 								pos++;
 							}
@@ -428,10 +439,10 @@ namespace WaveDump {
 						}
 					} else if (bitsPerSample == 16) {
 						/* For 16 bits per sample */
-						bytes = new byte[2 * numberOfChannels * samplesUsed];
+						bytes = new byte[2 * numChannels * samplesUsed];
 						int pos = 0;
 						for (int i = 0; i < samplesUsed; i++) {
-							for (int j = 0; j < numberOfChannels; j++) {
+							for (int j = 0; j < numChannels; j++) {
 								bytes[pos + 0] = (byte)(samples[j][i] >> 16);
 								bytes[pos + 1] = (byte)(samples[j][i] >> 24);
 								pos += 2;
@@ -449,10 +460,10 @@ namespace WaveDump {
 						}
 					} else if (bitsPerSample == 24) {
 						/* For 24 bits per sample */
-						bytes = new byte[3 * numberOfChannels * samplesUsed];
+						bytes = new byte[3 * numChannels * samplesUsed];
 						int pos = 0;
 						for (int i = 0; i < samplesUsed; i++) {
-							for (int j = 0; j < numberOfChannels; j++) {
+							for (int j = 0; j < numChannels; j++) {
 								bytes[pos + 0] = (byte)(samples[j][i] >> 8);
 								bytes[pos + 1] = (byte)(samples[j][i] >> 16);
 								bytes[pos + 2] = (byte)(samples[j][i] >> 24);
@@ -477,11 +488,62 @@ namespace WaveDump {
 				#endif
 				// --- end of file ---
 				if (sampleCount != samplesUsed) {
-					for (int i = 0; i < numberOfChannels; i++) {
+					for (int i = 0; i < numChannels; i++) {
 						Array.Resize<int>(ref samples[i], samplesUsed);
 					}
 				}
-				return samples;
+				trackLength = nSamples / (double)sampleRate;
+            	left = new float[nSamples];
+            	right = new float[nSamples];
+
+				int histogramSize = (int)Math.Pow(2, (double)bitsPerSample);
+                histogramLeft = new int[histogramSize];
+                histogramRight = new int[histogramSize];
+                for (int i = 0; i < histogramSize; i++) { histogramLeft[i] = histogramRight[i] = 0; }
+
+				int startSample = 0;
+                int endSample = nSamples - 1;            
+                int sample = startSample;
+
+                while (sample <= endSample)
+                {
+                    left[sample] = 0;
+                    if (bitsPerSample == 16)
+                    {
+                        short s = samples[0][sample];
+                        int hi = s + (histogramSize / 2);
+                        if ((hi >= 0) && (hi < histogramLeft.Length)) histogramLeft[hi]++;
+                        left[sample] = (float)s;
+                    }
+                    if (bitsPerSample == 24)
+                    {
+                        int s24 = samples[0][sample];
+                        int hi = s24 + (histogramSize / 2);
+                        if ((hi >= 0) && (hi < histogramLeft.Length)) histogramLeft[hi]++;
+                        left[sample] = (float)s24;
+                    }
+
+                    right[sample] = 0;
+                    if (numChannels > 1)
+                    {
+                        if (bitsPerSample == 16)
+                        {
+                            short s = samples[1][sample];
+                            int hi = s + (histogramSize / 2);
+                            if ((hi >= 0) && (hi < histogramRight.Length)) histogramRight[hi]++;
+                            right[sample] = (float)s;
+                        }
+                        if (bitsPerSample == 24)
+                        {
+                        	int s24 = samples[1][sample];
+                            int hi = s24 + (histogramSize / 2);
+                            if ((hi >= 0) && (hi < histogramRight.Length)) histogramRight[hi]++;
+                            right[sample] = (float)s24;
+                        }
+                    }
+                  
+                    sample++;
+                }
 			}
 		}
 		
@@ -543,6 +605,10 @@ namespace WaveDump {
 				return (int)value - (int)range;
 			}
 		}
-		
+		public void Dump()
+		{
+			base.Dump();
+			 System.Diagnostics.Debug.WriteLine("md5=" + md5String);
+		}
 	}
 }
