@@ -818,7 +818,7 @@ namespace GraficDisplay
                 Multiselect = true,
                 DefaultExt = "wav",
                 Filter = "wav files (*.wav)|*.wav|flac files (*.flac)|*.flac",
-                FilterIndex = 1,
+                FilterIndex = 2,
                 RestoreDirectory = true,
 
                 ReadOnlyChecked = true,
@@ -841,6 +841,7 @@ namespace GraficDisplay
                     if (ext == ".flac")
                     {
                         var fr0 = new WaveDump.FlacReader(openFileDialog1.FileNames[j]);
+                        fr0.Dump();
                     }
                     else
                     {

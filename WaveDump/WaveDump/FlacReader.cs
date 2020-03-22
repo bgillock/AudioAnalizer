@@ -138,7 +138,7 @@ namespace WaveDump
             {
                 uint* i = (uint*)b;
                 uint si = *i >> 1;
-                ss.numChannels = si;
+                ss.numChannels = si+1;
             }
 
             // Extract bitsPerSample
@@ -152,7 +152,7 @@ namespace WaveDump
             {
                 uint* i = (uint*)b;
                 uint si = *i >> 4;
-                ss.bitsPerSample = si;
+                ss.bitsPerSample = si+1;
             }
 
             // Extract totalSamples
@@ -262,6 +262,66 @@ namespace WaveDump
             }
             return output;
         }
+
+        private unsafe uint GetUTF8CodedFrameNumber(ref byte[] input, ref int index)
+        {
+            uint v = 0;
+            byte x;
+            uint i;
+            uint val;
+
+            x = input[index];
+
+            if ((x & 0x80) == 0)
+            { /* 0xxxxxxx */
+                v = x;
+                i = 0;
+            }
+            else if ((x & 0xC0) == 1 && (x & 0x20) == 0)
+            { /* 110xxxxx */
+                v = (uint)x & 0x1F;
+                i = 1;
+            }
+            else if ((x & 0xE0) == 1 && (x & 0x10) == 0)
+            { /* 1110xxxx */
+                v = (uint)x & 0x0F;
+                i = 2;
+            }
+            else if ((x & 0xF0) == 1 && (x & 0x08) == 0)
+            { /* 11110xxx */
+                v = (uint)x & 0x07;
+                i = 3;
+            }
+            else if ((x & 0xF8) == 1 && (x & 0x04) == 0)
+            { /* 111110xx */
+                v = (uint)x & 0x03;
+                i = 4;
+            }
+            else if ((x & 0xFC) == 1 && (x & 0x02) == 0)
+            { /* 1111110x */
+                v = (uint)x & 0x01;
+                i = 5;
+            }
+            else
+            {
+                val = 0xffffffff;
+                return val;
+            }
+            int ndx = index++;
+            for (int j=ndx+1; j <= ndx+i; j++)
+            {
+                x = input[j]; index++;
+                if ((x & 0x80) == 0 || (x & 0x40) == 1)
+                { /* 10xxxxxx */
+                    val = 0xffffffff;
+                    return val;
+                }
+                v <<= 6;
+                v |= (uint)(x & 0x3F);
+            }
+            val = v;
+            return val;
+        }
         private unsafe void Set24(ref byte[] input, int index, int s)
         {
             int output = 0;
@@ -314,7 +374,10 @@ namespace WaveDump
         public int chunkSize;
         public string format;
 
-        public int subChunk1Size;
+        public short minimumBlockSize;
+        public short maximumBlockSize;
+        public int minimumFrameSize;
+        public int maximumFrameSize;
         public short audioFormat;
         public short numChannels;
         public int sampleRate;
@@ -328,46 +391,57 @@ namespace WaveDump
         public float[] left;
         public float[] right;
         public int[] histogram;
+        public ulong totalSamplesInStream;
+        public string md5;
+        public string vendor;
+        public List<string> comments;
 
 
         public FlacReader(string fileName)
         {
 
             _fname = fileName;
+            System.Diagnostics.Debug.WriteLine("Filename=" + _fname);
             using (BinaryReader reader = new BinaryReader(File.Open(_fname, FileMode.Open)))
             {
                 int pos = 0;
                 int length = (int)reader.BaseStream.Length;
                 byte[] flacin = reader.ReadBytes(4);  // fLaC
-                flacin = reader.ReadBytes(4); // Meta data block header
-                System.Diagnostics.Debug.WriteLine("Filename=" + _fname);
-                byte last_type = flacin[0];
-                pos += 1;
-                int mbl = GetU24(ref flacin, pos);
-                System.Diagnostics.Debug.WriteLine("MetaDataBlockLen=" + mbl);
+                format = GetString(ref flacin, 0, 4);
 
-                BlockType blockType = GetBlockType(last_type);
-                System.Diagnostics.Debug.WriteLine("BlockType=" + blockType.ToString());
-                bool lastHeader = (last_type & 0x80) != 0;
+                bool lastHeader = false;
 
-                do
-                {
+                // Loop throuugh Meta Data Headers
+                do 
+                {                
+                    flacin = reader.ReadBytes(4); // Meta data block header
+                    pos = 0;
+                    byte last_type = flacin[0];
+                    pos += 1;
+                    int mbl = GetU24(ref flacin, pos);
+                    System.Diagnostics.Debug.WriteLine("MetaDataBlockLen=" + mbl);
+
+                    BlockType blockType = GetBlockType(last_type);
+                    System.Diagnostics.Debug.WriteLine("BlockType=" + blockType.ToString());
+
+                    lastHeader = (last_type & 0x80) != 0;
+
                     switch (blockType)
                     {
                         case BlockType.StreamInfo:
                           
                             flacin = reader.ReadBytes(mbl);
                             pos = 0;
-                            short minimumBlockSize = GetShort(ref flacin, pos); pos += 2;
-                            short maximumBlockSize = GetShort(ref flacin, pos); pos += 2;
-                            int minimumFrameSize = GetU24(ref flacin, pos); pos += 3;
-                            int maximumFrameSize = GetU24(ref flacin, pos); pos += 3;
+                            minimumBlockSize = GetShort(ref flacin, pos); pos += 2;
+                            maximumBlockSize = GetShort(ref flacin, pos); pos += 2;
+                            minimumFrameSize = GetU24(ref flacin, pos); pos += 3;
+                            maximumFrameSize = GetU24(ref flacin, pos); pos += 3;
                             SubStreamInfo ss = GetSubStreamInfo(ref flacin, pos); pos += 8;
-                            string md5 = GetHexString(ref flacin, pos, 16); pos += 16;
-                            System.Diagnostics.Debug.WriteLine("minimumBlockSize=" + minimumBlockSize);
-                            System.Diagnostics.Debug.WriteLine("maximumBlockSize=" + maximumBlockSize);
-                            System.Diagnostics.Debug.WriteLine("minimumFrameSize=" + minimumFrameSize);
-                            System.Diagnostics.Debug.WriteLine("maximumFrameSize=" + maximumFrameSize);
+                            sampleRate = (int)ss.sampleRate;
+                            numChannels = (short)ss.numChannels;
+                            bitsPerSample = (short)ss.bitsPerSample;
+                            totalSamplesInStream = ss.totalSamplesInStream;
+                            md5 = GetHexString(ref flacin, pos, 16); pos += 16;
                             System.Diagnostics.Debug.WriteLine("sampleRate=" + ss.sampleRate);
                             System.Diagnostics.Debug.WriteLine("numChannels=" + ss.numChannels);
                             System.Diagnostics.Debug.WriteLine("bitsPerSample=" + ss.bitsPerSample);
@@ -380,14 +454,13 @@ namespace WaveDump
                             flacin = reader.ReadBytes(mbl);
                             pos = 0;
                             int vendor_length = GetInt(ref flacin, pos); pos += 4;
-                            string vendor_string = GetString(ref flacin, pos, vendor_length); pos += vendor_length;
-                            System.Diagnostics.Debug.WriteLine("vendor_string=" + vendor_string);
+                            vendor = GetString(ref flacin, pos, vendor_length); pos += vendor_length;
                             int user_comment_list_length = GetInt(ref flacin, pos); pos += 4;
+                            comments = new List<string>();
                             for (int i = 0; i < user_comment_list_length; i++)
                             {
                                 int comment_length = GetInt(ref flacin, pos); pos += 4;
-                                string comment = GetString(ref flacin, pos, comment_length); pos += comment_length;
-                                System.Diagnostics.Debug.WriteLine("comment=" + comment);
+                                comments.Add(GetString(ref flacin, pos, comment_length)); pos += comment_length;
                             }
                             break;
                         case BlockType.Application:
@@ -398,22 +471,32 @@ namespace WaveDump
                         case BlockType.Unknown:
                             flacin = reader.ReadBytes(mbl);
                             break;
-
-                    }
-
-                    if (!lastHeader)
-                    {
-                        flacin = reader.ReadBytes(4); pos = 0; // Meta data block header
-
-                        last_type = flacin[0];
-                        pos += 1;
-                        mbl = GetU24(ref flacin, pos);
-                        System.Diagnostics.Debug.WriteLine("MetaDataBlockLen=" + mbl);
-                        blockType = GetBlockType(last_type);
-                        System.Diagnostics.Debug.WriteLine("BlockType=" + blockType.ToString());
-                        lastHeader = (last_type & 0x80) != 0;
                     }
                 } while (!lastHeader);
+
+                // Loop through frames
+                do
+                {
+                    flacin = reader.ReadBytes(30); pos = 0;
+                    byte mask = 0x01;
+                    int variableBlockingStrategy = (flacin[1] & mask);
+                    mask = 0xF0;
+                    int interchannelSampleBlockSize = (flacin[2] & mask) >> 4;
+                    mask = 0x0F;
+                    int frameSampleRate = (flacin[2] & mask);
+                    mask = 0xF0;
+                    int channelAssignment = (flacin[3] & mask) >> 4;
+                    mask = 0x0E;
+                    pos = 4;
+                    int sampleSize = (flacin[3] & mask) >> 1;
+                    uint frameNumber = GetUTF8CodedFrameNumber(ref flacin, ref pos);
+                    byte frameCRC = flacin[pos]; pos++;
+                    byte subFrameHeader = flacin[pos]; pos++;
+                    mask = 0x7E;
+                    int subFrameType = (subFrameHeader & mask) >> 1;
+
+                }
+                while (false);
             }
         }
         
@@ -422,17 +505,20 @@ namespace WaveDump
             System.Diagnostics.Debug.WriteLine("fileName," + _fname);
             System.Diagnostics.Debug.WriteLine("fileSize," + chunkSize);
             System.Diagnostics.Debug.WriteLine("Format," + format);
-            System.Diagnostics.Debug.WriteLine("subChunk1Size," + subChunk1Size);
-            System.Diagnostics.Debug.WriteLine("audioFormat," + audioFormat);
             System.Diagnostics.Debug.WriteLine("numChannels," + numChannels);
             System.Diagnostics.Debug.WriteLine("sampleRate," + sampleRate);
-            System.Diagnostics.Debug.WriteLine("byteRate," + byteRate);
-            System.Diagnostics.Debug.WriteLine("blockAlign," + blockAlign);
             System.Diagnostics.Debug.WriteLine("bitsPerSample," + bitsPerSample);
-            System.Diagnostics.Debug.WriteLine("bytesPerSample," + bytesPerSample);
-            System.Diagnostics.Debug.WriteLine("subChunk2Size," + subChunk2Size);
-            System.Diagnostics.Debug.WriteLine("nSamples," + nSamples);
-            System.Diagnostics.Debug.WriteLine("trackLength," + trackLength );
+            System.Diagnostics.Debug.WriteLine("minimumBlockSize=" + minimumBlockSize);
+            System.Diagnostics.Debug.WriteLine("maximumBlockSize=" + maximumBlockSize);
+            System.Diagnostics.Debug.WriteLine("minimumFrameSize=" + minimumFrameSize);
+            System.Diagnostics.Debug.WriteLine("maximumFrameSize=" + maximumFrameSize);
+            System.Diagnostics.Debug.WriteLine("totalSamplesInStream=" + totalSamplesInStream);
+            System.Diagnostics.Debug.WriteLine("md5=" + md5);
+            System.Diagnostics.Debug.WriteLine("vendor=" + vendor);
+            foreach (string c in comments)
+            {
+                System.Diagnostics.Debug.WriteLine("comment=" + c);
+            }
         }
         
     }

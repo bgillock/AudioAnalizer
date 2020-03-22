@@ -67,8 +67,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BitReader.cs" />
     <Compile Include="Correlate.cs" />
+    <Compile Include="Crc16.cs" />
+    <Compile Include="Crc8.cs" />
     <Compile Include="FFT.cs" />
+    <Compile Include="FLACDecoder.cs" />
     <Compile Include="FlacReader.cs" />
     <Compile Include="FloatUtils.cs" />
     <Compile Include="Program.cs" />
