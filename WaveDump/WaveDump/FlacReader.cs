@@ -427,14 +427,14 @@ namespace WaveDump
                     short l = (short)samples[0][sample];
                     int hi = l + (histogramSize / 2);
                     if ((hi >= 0) && (hi < histogram.Length)) histogram[hi]++;
-                    left[sample] = (float)l;
+                    left[sample] = (float)samples[0][sample];
                 }
                 if (bitsPerSample == 24)
                 {
                     int s = samples[0][sample];
                     int hi = s + (histogramSize / 2);
                     if ((hi >= 0) && (hi < histogram.Length)) histogram[hi]++;
-                    left[sample] = (float)s;
+                    left[sample] = (float)samples[0][sample];
                 }
 
 
@@ -445,12 +445,12 @@ namespace WaveDump
                     if (bitsPerSample == 16)
                     {
                         short r = (short)samples[1][sample];
-                        right[sample] = (float)r;
+                        right[sample] = (float)samples[1][sample];
                     }
                     if (bitsPerSample == 24)
                     {
                         int s = samples[1][sample];
-                        right[sample] = (float)s;
+                        right[sample] = (float)samples[1][sample];
                     }
                 }
 
