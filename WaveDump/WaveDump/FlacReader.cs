@@ -1,39 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
+#define CHECKSUMS // whether to check for CRC-8, CRC-16 and MD5
+
+using System;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Security.Cryptography;
 
-namespace WaveDump
-{
-    public class FlacReader
-    {
-        private string _fname;
-        private enum BlockType { StreamInfo, Padding, Application, SeekTable, VorbisComment, CueSheet, Picture, Unknown };
-
-        private unsafe void Flip(ref byte* f)
-        {
-            byte temp;
-            temp = f[0];
-            f[0] = f[3];
-            f[3] = temp;
-            temp = f[1];
-            f[1] = f[2];
-            f[2] = temp;
-
-        }
-        private string GetString(ref byte[] input, int index, int size)
-        {
-            string retValue = "";
-            for (int i = index; i < index + size; i++)
-            {
-                retValue += (char)input[i];
-            }
-            return retValue;
-        }
-
-        private string GetHexString(ref byte[] input, int index, int size)
+namespace WaveDump {
+	public class FlacReader : AudioReader
+	{
+		/// <summary>Decodes the specified native FLAC file and extracts the raw samples.</summary>
+		/// <param name="file">The path to the native FLAC file.</param>
+		/// <returns>The raw samples per channel, padded into the most-significant bits (makes all samples 32-bits wide and signed).</returns>
+		public string md5String;
+		private string GetHexString(ref byte[] input, int index, int size)
         {
             StringBuilder hex = new StringBuilder(size * 2);
             for (int i = index; i < index + size; i++)
@@ -42,545 +21,599 @@ namespace WaveDump
             }
             return hex.ToString();
         }
-        private unsafe int GetFlipInt(ref byte[] input, int index)
-        {
-            int output = 0;
+		public FlacReader(string fileName) : base (fileName) {
+			unchecked {
+				
+				byte[] bytes = File.ReadAllBytes(fileName);
+				BitReader reader = new BitReader(bytes);
+				// --- identifier ---
+				if (reader.ReadUInt32BE() != 0x664C6143) {
+					throw new InvalidDataException();
+				}
+				sampleRate = 0;
+				bitsPerSample = 0;
+				numChannels = 0;
+				int totalNumberOfSamples = 0;
+				bool streaminfoPresent = false;
+				byte[] md5 = null;
+				// --- metadata blocks ---
+				while (true) {
+					// --- block header ---
+					bool lastBlock = reader.ReadBit() == 1;
+					int blockType = (int)reader.ReadBits(7);
+					int blockLength = (int)reader.ReadUInt24BE();
+					if (blockType == 0) {
+						// --- STREAMINFO ---
+						if (streaminfoPresent) {
+							throw new InvalidDataException();
+						}
+						if (blockLength != 34) {
+							throw new InvalidDataException();
+						}
+						int minimumBlockSize = (int)reader.ReadUInt16BE();
+						if (minimumBlockSize < 16) {
+							throw new InvalidDataException();
+						}
+						int maximumBlockSize = (int)reader.ReadUInt16BE();
+						if (minimumBlockSize > maximumBlockSize | maximumBlockSize > 65535) {
+							throw new InvalidDataException();
+						}
+						int minimumFrameSize = (int)reader.ReadUInt24BE();
+						int maximumFrameSize = (int)reader.ReadUInt24BE();
+						if (minimumFrameSize > maximumFrameSize & maximumFrameSize != 0) {
+							throw new InvalidDataException();
+						}
+						sampleRate = (int)reader.ReadBits(20);
+						if (sampleRate == 0 | sampleRate > 655350) {
+							throw new InvalidDataException();
+						}
+						numChannels = (short)(reader.ReadBits(3) + 1);
+						bitsPerSample = (short)(reader.ReadBits(5) + 1);
+						if (bitsPerSample < 4) {
+							throw new InvalidDataException();
+						}
+						/* total number of samples: 36 bits
+						 * only the lower 31 bits are supported */
+						if (reader.ReadBits(4) != 0) {
+							throw new NotSupportedException("Too many samples for this decoder.");
+						}
+						totalNumberOfSamples = (int)reader.ReadUInt32BE();
+						if (totalNumberOfSamples < 0) {
+							throw new NotSupportedException("Too many samples for this decoder.");
+						}
+						md5 = reader.ReadBytes(16);
+						md5String = GetHexString(ref md5,0,16);
+						streaminfoPresent = true;
+					} else if (blockType >= 1 & blockType <= 6) {
+						// --- ignored ---
+						reader.BytePosition += (int)blockLength;
+					} else {
+						// --- invalid ---
+						throw new InvalidDataException();
+					}
+					if (lastBlock) {
+						break;
+					}
+				}
+				// --- prepare samples per channel ---
+				if (!streaminfoPresent) {
+					throw new InvalidDataException();
+				}
+				int[][] samples = new int[numChannels][];
+				int sampleCount = totalNumberOfSamples != 0 ? (int)totalNumberOfSamples : 65536;
+				for (int i = 0; i < numChannels; i++) {
+					samples[i] = new int[sampleCount];
+				}
+				nSamples = sampleCount;
+				int samplesUsed = 0;
+				// --- frames ---
+				while (!reader.EndOfStream()) {
+					// --- frame header ---
+					int frameHeaderPosition = reader.BytePosition;
+					uint syncCode = reader.ReadBits(14);
+					if (syncCode != 0x3FFE) {
+						throw new InvalidDataException();
+					}
+					uint reserved1 = reader.ReadBit();
+					if (reserved1 != 0) {
+						throw new InvalidDataException();
+					}
+					uint blockingStrategy = reader.ReadBit();
+					int blockNumberOfSamples = (int)reader.ReadBits(4);
+					if (blockNumberOfSamples == 0) {
+						throw new InvalidDataException();
+					} else if (blockNumberOfSamples == 1) {
+						blockNumberOfSamples = 192;
+					} else if (blockNumberOfSamples >= 2 & blockNumberOfSamples <= 5) {
+						blockNumberOfSamples = 576 << (int)(blockNumberOfSamples - 2);
+					} else if (blockNumberOfSamples >= 8 & blockNumberOfSamples <= 15) {
+						blockNumberOfSamples = 256 << (int)(blockNumberOfSamples - 8);
+					}
+					int blockSampleRate = (int)reader.ReadBits(4);
+					if (blockSampleRate == 0) {
+						blockSampleRate = sampleRate;
+					} else if (blockSampleRate == 1) {
+						blockSampleRate = 88200;
+					} else if (blockSampleRate == 2) {
+						blockSampleRate = 176400;
+					} else if (blockSampleRate == 3) {
+						blockSampleRate = 192000;
+					} else if (blockSampleRate == 4) {
+						blockSampleRate = 8000;
+					} else if (blockSampleRate == 5) {
+						blockSampleRate = 16000;
+					} else if (blockSampleRate == 6) {
+						blockSampleRate = 22050;
+					} else if (blockSampleRate == 7) {
+						blockSampleRate = 24000;
+					} else if (blockSampleRate == 8) {
+						blockSampleRate = 32000;
+					} else if (blockSampleRate == 9) {
+						blockSampleRate = 44100;
+					} else if (blockSampleRate == 10) {
+						blockSampleRate = 48000;
+					} else if (blockSampleRate == 11) {
+						blockSampleRate = 96000;
+					} else if (blockSampleRate == 15) {
+						throw new InvalidDataException();
+					}
+					uint channelAssignment = reader.ReadBits(4);
+					int blockBitsPerSample = (int)reader.ReadBits(3);
+					if (blockBitsPerSample == 0) {
+						blockBitsPerSample = bitsPerSample;
+					} else if (blockBitsPerSample == 1) {
+						blockBitsPerSample = 8;
+					} else if (blockBitsPerSample == 2) {
+						blockBitsPerSample = 12;
+					} else if (blockBitsPerSample == 4) {
+						blockBitsPerSample = 16;
+					} else if (blockBitsPerSample == 5) {
+						blockBitsPerSample = 20;
+					} else if (blockBitsPerSample == 6) {
+						blockBitsPerSample = 24;
+					} else {
+						throw new InvalidDataException();
+					}
+					uint reserved2 = reader.ReadBit();
+					if (reserved2 != 0) {
+						throw new InvalidDataException();
+					}
+					ulong sampleOrFrameNumber = (ulong)reader.ReadUTF8EncodedInteger();
+					if (blockNumberOfSamples == 6) {
+						blockNumberOfSamples = (int)reader.ReadByte() + 1;
+					} else if (blockNumberOfSamples == 7) {
+						blockNumberOfSamples = (int)reader.ReadUInt16BE() + 1;
+					}
+					if (blockSampleRate == 12) {
+						blockSampleRate = (int)reader.ReadByte();
+					} else if (blockSampleRate == 13) {
+						blockSampleRate = (int)reader.ReadUInt16BE();
+					} else if (blockSampleRate == 14) {
+						blockSampleRate = 10 * (int)reader.ReadUInt16BE();
+					}
+					uint crc8 = reader.ReadByte();
+					#if CHECKSUMS
+					if (crc8 != Crc8.ComputeHash(reader.Bytes, frameHeaderPosition, reader.BytePosition - frameHeaderPosition - 1)) {
+						throw new InvalidDataException("CRC-8 failed.");
+					}
+					#endif
+					// --- subframes ---
+					while (samplesUsed + blockNumberOfSamples > sampleCount) {
+						sampleCount <<= 1;
+						for (int i = 0; i < numChannels; i++) {
+							Array.Resize<int>(ref samples[i], (int)sampleCount);
+						}
+					}
+					for (int i = 0; i < numChannels; i++) {
+						uint zero = reader.ReadBit();
+						if (zero != 0) {
+							throw new InvalidDataException();
+						}
+						uint subframeType = reader.ReadBits(6);
+						int wastedBitsPerSample = (int)reader.ReadUnaryEncodedInteger();
+						if (wastedBitsPerSample > bitsPerSample) {
+							throw new InvalidDataException();
+						}
+						int subframeBitsPerSample = bitsPerSample - wastedBitsPerSample;
+						if (channelAssignment == 8 & i == 1) {
+							subframeBitsPerSample++;
+						} else if (channelAssignment == 9 & i == 0) {
+							subframeBitsPerSample++;
+						} else if (channelAssignment == 10 & i == 1) {
+							subframeBitsPerSample++;
+						}
+						if (subframeType == 0) {
+							// --- SUBFRAME_CONSTANT ---
+							int value = FromTwosComplement(reader.ReadBits((int)subframeBitsPerSample), (uint)1 << subframeBitsPerSample) << (int)(32 - subframeBitsPerSample);
+							int numberOfSamples = blockNumberOfSamples * bitsPerSample / subframeBitsPerSample;
+							for (int j = 0; j < numberOfSamples; j++) {
+								samples[i][samplesUsed + j] = value;
+							}
+						} else if (subframeType == 1) {
+							// --- SUBFRAME_VERBATIM ---
+							if (blockSampleRate == sampleRate) {
+								for (int j = 0; j < blockNumberOfSamples; j++) {
+									int value = FromTwosComplement(reader.ReadBits((int)subframeBitsPerSample), (uint)1 << subframeBitsPerSample) << (int)(32 - subframeBitsPerSample);
+									samples[i][samplesUsed + j] = value;
+								}
+							} else {
+								throw new NotSupportedException("Variable sample rates are not supported by this decoder.");
+							}
+						} else if ((subframeType & 0x38) == 8) {
+							// --- SUBFRAME_FIXED ---
+							int predictorOrder = (int)subframeType & 7;
+							if (predictorOrder > 4) {
+								throw new InvalidDataException();
+							}
+							int[] blockSamples = new int[blockNumberOfSamples];
+							for (int j = 0; j < predictorOrder; j++) {
+								blockSamples[j] = FromTwosComplement(reader.ReadBits(subframeBitsPerSample), (uint)1 << subframeBitsPerSample);
+							}
+							int[] residuals = ReadResiduals(reader, predictorOrder, blockNumberOfSamples);
+							int mask = (1 << subframeBitsPerSample) - 1;
+							if (predictorOrder == 0) {
+								for (int j = 0; j < blockNumberOfSamples; j++) {
+									blockSamples[j] = residuals[j] & mask;
+								}
+							} else if (predictorOrder == 1) {
+								for (int j = 1; j < blockNumberOfSamples; j++) {
+									int predictor = blockSamples[j - 1];
+									blockSamples[j] = (residuals[j] + predictor) & mask;
+								}
+							} else if (predictorOrder == 2) {
+								for (int j = 2; j < blockNumberOfSamples; j++) {
+									int predictor = 2 * blockSamples[j - 1] - blockSamples[j - 2];
+									blockSamples[j] = (residuals[j] + predictor) & mask;
+								}
+							} else if (predictorOrder == 3) {
+								for (int j = 3; j < blockNumberOfSamples; j++) {
+									int predictor = 3 * blockSamples[j - 1] - 3 * blockSamples[j - 2] + blockSamples[j - 3];
+									blockSamples[j] = (residuals[j] + predictor) & mask;
+								}
+							} else if (predictorOrder == 4) {
+								for (int j = 4; j < blockNumberOfSamples; j++) {
+									int predictor = 4 * blockSamples[j - 1] - 6 * blockSamples[j - 2] + 4 * blockSamples[j - 3] - blockSamples[j - 4];
+									blockSamples[j] = (residuals[j] + predictor) & mask;
+								}
+							} else {
+								throw new InvalidOperationException();
+							}
+							if (blockSampleRate == sampleRate) {
+								for (int j = 0; j < blockNumberOfSamples; j++) {
+									samples[i][samplesUsed + j] = blockSamples[j] << (int)(32 - subframeBitsPerSample);
+									// samples[i][samplesUsed + j] = blockSamples[j];
+								}
+							} else {
+								throw new NotSupportedException("Variable sample rates are not supported by this decoder.");
+							}
+						} else if ((subframeType & 0x20) == 0x20) {
+							// --- SUBFRAME_LPC ---
+							int predictorOrder = ((int)subframeType & 0x1F) + 1;
+							int[] blockSamples = new int[blockNumberOfSamples];
+							for (int j = 0; j < predictorOrder; j++) {
+								blockSamples[j] = FromTwosComplement(reader.ReadBits((int)subframeBitsPerSample), (uint)1 << subframeBitsPerSample);
+								if (blockSamples[j] != 0) {
+									int asdgfefe = blockSamples[j];
+								}
+							}
+							int coefficientPrecision = (int)reader.ReadBits(4) + 1;
+							if (coefficientPrecision == 16) {
+								throw new InvalidDataException();
+							}
+							int coefficientRange = 1 << coefficientPrecision;
+							int predictorShift = FromTwosComplement(reader.ReadBits(5), 32);
+							if (predictorShift < 0) {
+								throw new NotSupportedException("A negative predictor shift is not supported by this decoder.");
+							}
+							int[] coefficients = new int[predictorOrder];
+							for (int j = 0; j < predictorOrder; j++) {
+								coefficients[j] = FromTwosComplement(reader.ReadBits((int)coefficientPrecision), (uint)coefficientRange);
+							}
+							int[] residuals = ReadResiduals(reader, predictorOrder, blockNumberOfSamples);
+							if (subframeBitsPerSample == 8) {
+								if (coefficientPrecision <= 18) {
+									for (int j = predictorOrder; j < blockNumberOfSamples; j++) {
+										int predictor = 0;
+										for (int k = 0; k < predictorOrder; k++) {
+											predictor += coefficients[k] * blockSamples[j - k - 1];
+										}
+										predictor >>= predictorShift;
+										blockSamples[j] = (int)(sbyte)(predictor + residuals[j]);
+									}
+								} else {
+									for (int j = predictorOrder; j < blockNumberOfSamples; j++) {
+										long predictor = 0;
+										for (int k = 0; k < predictorOrder; k++) {
+											predictor += (long)coefficients[k] * (long)blockSamples[j - k - 1];
+										}
+										predictor >>= predictorShift;
+										blockSamples[j] = (int)(sbyte)(predictor + residuals[j]);
+									}
+								}
+							} else if (subframeBitsPerSample == 16) {
+								if (coefficientPrecision <= 11) {
+									for (int j = predictorOrder; j < blockNumberOfSamples; j++) {
+										int predictor = 0;
+										for (int k = 0; k < predictorOrder; k++) {
+											predictor += coefficients[k] * blockSamples[j - k - 1];
+										}
+										predictor >>= predictorShift;
+										blockSamples[j] = (int)(short)(predictor + residuals[j]);
+									}
+								} else {
+									for (int j = predictorOrder; j < blockNumberOfSamples; j++) {
+										long predictor = 0;
+										for (int k = 0; k < predictorOrder; k++) {
+											predictor += (long)coefficients[k] * (long)blockSamples[j - k - 1];
+										}
+										predictor >>= predictorShift;
+										blockSamples[j] = (int)(short)(predictor + residuals[j]);
+									}
+								}
+							} else {
+								int range = 1 << subframeBitsPerSample;
+								int mask = range - 1;
+								for (int j = predictorOrder; j < blockNumberOfSamples; j++) {
+									long predictor = 0;
+									for (int k = 0; k < predictorOrder; k++) {
+										predictor += (long)coefficients[k] * (long)blockSamples[j - k - 1];
+									}
+									predictor >>= predictorShift;
+									blockSamples[j] = (int)(predictor + residuals[j]) & mask;
+									if (blockSamples[j] >= range / 2) {
+										blockSamples[j] -= range;
+									}
+								}
+							}
+							if (blockSampleRate == sampleRate) {
+								for (int j = 0; j < blockNumberOfSamples; j++) {
+									samples[i][samplesUsed + j] = blockSamples[j] << (int)(32 - subframeBitsPerSample);
+								}
+							} else {
+								throw new NotSupportedException("Variable sample rates are not supported by this decoder.");
+							}
+						} else {
+							// --- not supported ---
+							throw new InvalidDataException();
+						}
+					}
+					// --- inter-channel decorreleation ---
+					if (channelAssignment == 8) {
+						// --- left + difference ---
+						for (int i = samplesUsed; i < samplesUsed + blockNumberOfSamples; i++) {
+							samples[1][i] = ((samples[0][i] >> 1) - samples[1][i]) << 1;
+						}
+					} else if (channelAssignment == 9) {
+						// --- difference + right ---
+						for (int i = samplesUsed; i < samplesUsed + blockNumberOfSamples; i++) {
+							samples[0][i] = ((samples[1][i] >> 1) + samples[0][i]) << 1;
+						}
+					} else if (channelAssignment == 10) {
+						// --- average + difference ---
+						int mask = 1 << (31 - blockBitsPerSample);
+						for (int i = samplesUsed; i < samplesUsed + blockNumberOfSamples; i++) {
+							int mid = samples[0][i];
+							int side = samples[1][i];
+							samples[0][i] = ((mid | (side & mask)) + side);
+							samples[1][i] = ((mid | (side & mask)) - side);
+						}
+					}
+					samplesUsed += blockNumberOfSamples;
+					// --- padding ---
+					reader.Align();
+					// --- footer ---
+					uint crc16 = reader.ReadUInt16BE();
+					#if CHECKSUMS
+					if (crc16 != Crc16.ComputeHash(reader.Bytes, frameHeaderPosition, reader.BytePosition - frameHeaderPosition - 2)) {
+						throw new InvalidDataException("CRC-16 failed.");
+					}
+					#endif
+				}
+				// --- check md5 ---
+				#if CHECKSUMS
+				bool md5Set = false;
+				for (int i = 0; i < md5.Length; i++) {
+					if (md5[i] != 0) {
+						md5Set = true;
+						break;
+					}
+				}
+				if (md5Set) {
+					if (bitsPerSample == 8) {
+						/* For 8 bits per sample */
+						bytes = new byte[numChannels * samplesUsed];
+						int pos = 0;
+						for (int i = 0; i < samplesUsed; i++) {
+							for (int j = 0; j < numChannels; j++) {
+								bytes[pos] = (byte)(samples[j][i] >> 24);
+								pos++;
+							}
+						}
+						MD5CryptoServiceProvider provider = new MD5CryptoServiceProvider();
+						byte[] check = provider.ComputeHash(bytes);
+						if (check.Length != md5.Length) {
+							throw new InvalidOperationException();
+						}
+						for (int i = 0; i < check.Length; i++) {
+							if (check[i] != md5[i]) {
+								throw new InvalidDataException("MD5 failed.");
+							}
+						}
+					} else if (bitsPerSample == 16) {
+						/* For 16 bits per sample */
+						bytes = new byte[2 * numChannels * samplesUsed];
+						int pos = 0;
+						for (int i = 0; i < samplesUsed; i++) {
+							for (int j = 0; j < numChannels; j++) {
+								bytes[pos + 0] = (byte)(samples[j][i] >> 16);
+								bytes[pos + 1] = (byte)(samples[j][i] >> 24);
+								pos += 2;
+							}
+						}
+						MD5CryptoServiceProvider provider = new MD5CryptoServiceProvider();
+						byte[] check = provider.ComputeHash(bytes);
+						if (check.Length != md5.Length) {
+							throw new InvalidOperationException();
+						}
+						for (int i = 0; i < check.Length; i++) {
+							if (check[i] != md5[i]) {
+								throw new InvalidDataException("MD5 failed.");
+							}
+						}
+					} else if (bitsPerSample == 24) {
+						/* For 24 bits per sample */
+						bytes = new byte[3 * numChannels * samplesUsed];
+						int pos = 0;
+						for (int i = 0; i < samplesUsed; i++) {
+							for (int j = 0; j < numChannels; j++) {
+								bytes[pos + 0] = (byte)(samples[j][i] >> 8);
+								bytes[pos + 1] = (byte)(samples[j][i] >> 16);
+								bytes[pos + 2] = (byte)(samples[j][i] >> 24);
+								pos += 3;
+							}
+						}
+						MD5CryptoServiceProvider provider = new MD5CryptoServiceProvider();
+						byte[] check = provider.ComputeHash(bytes);
+						if (check.Length != md5.Length) {
+							throw new InvalidOperationException();
+						}
+						for (int i = 0; i < check.Length; i++) {
+							if (check[i] != md5[i]) {
+								throw new InvalidDataException("MD5 failed.");
+							}
+						}
+					} else {
+						/* Let's just skip the MD5 check in other cases
+						 * or feel free to implement the check here. */
+					}
+				}
+				#endif
+				// --- end of file ---
+				if (sampleCount != samplesUsed) {
+					for (int i = 0; i < numChannels; i++) {
+						Array.Resize<int>(ref samples[i], samplesUsed);
+					}
+				}
+				trackLength = nSamples / (double)sampleRate;
+            	left = new float[nSamples];
+            	right = new float[nSamples];
 
-            try
-            {
-                fixed (byte* b = input)
+				int histogramSize = (int)Math.Pow(2, (double)bitsPerSample);
+                histogramLeft = new int[histogramSize];
+                histogramRight = new int[histogramSize];
+                for (int i = 0; i < histogramSize; i++) { histogramLeft[i] = histogramRight[i] = 0; }
+
+				int startSample = 0;
+                int endSample = nSamples - 1;            
+                int sample = startSample;
+
+                while (sample <= endSample)
                 {
-                    byte* c = b + index;
-                    Flip(ref c);
-                    int* i = (int*)c;
-                    output = *i;
-                }
-            }
-            catch (Exception ex)
-            {
-            }
-            return output;
-        }
-        private unsafe int GetInt(ref byte[] input, int index)
-        {
-            int output = 0;
-            try
-            {
-                fixed (byte* b = input)
-                {
-                    byte* c = b + index;
-
-                    int* i = (int*)c;
-                    output = *i;
-                }
-            }
-            catch (Exception ex)
-            {
-            }
-            return output;
-        }
-        private unsafe short GetShort(ref byte[] input, int index)
-        {
-            short output = 0;
-            try
-            {
-                fixed (byte* b = input)
-                {
-                    byte* c = b + index;
-
-                    short* i = (short*)c;
-                    output = *i;
-                }
-            }
-            catch (Exception ex)
-            {
-            }
-            return output;
-        }
-
-        struct SubStreamInfo
-        {
-            public uint sampleRate;
-            public uint numChannels;
-            public uint bitsPerSample;
-            public ulong totalSamplesInStream;
-        } 
-        private unsafe SubStreamInfo GetSubStreamInfo(ref byte[] input, int index)
-        {
-            SubStreamInfo ss = new SubStreamInfo
-            {
-                sampleRate = 44100,
-                numChannels = 1,
-                bitsPerSample = 15,
-                totalSamplesInStream = 1000000
-            };
-
-            // Extract sampleRate
-            byte[] b24 = new byte[4];
-            b24[0] = input[index + 2];
-            b24[1] = input[index + 1];
-            b24[2] = input[index];
-            b24[3] = 0x00;
-            fixed (byte* b = b24)
-            {
-                uint* i = (uint*)b;
-                uint si = *i >> 4;
-                ss.sampleRate = si;
-            }
-
-            // Extract numChannels
-            byte mask = 0x0E;
-            b24[0] = (byte)(input[index + 2] & mask);
-            b24[1] = 0x00;
-            b24[2] = 0x00;
-            b24[3] = 0x00;
-            fixed (byte* b = b24)
-            {
-                uint* i = (uint*)b;
-                uint si = *i >> 1;
-                ss.numChannels = si+1;
-            }
-
-            // Extract bitsPerSample
-            mask = 0xF0;
-            b24[0] = (byte)(input[index + 3] & mask);
-            mask = 0x01;
-            b24[1] = (byte)(input[index + 2] & mask);
-            b24[2] = 0x00;
-            b24[3] = 0x00;
-            fixed (byte* b = b24)
-            {
-                uint* i = (uint*)b;
-                uint si = *i >> 4;
-                ss.bitsPerSample = si+1;
-            }
-
-            // Extract totalSamples
-            byte[] b64 = new byte[8];
-            b64[0] = input[index + 7];
-            b64[1] = input[index + 6];
-            b64[2] = input[index + 5];
-            b64[3] = input[index + 4];
-            mask = 0x0F;
-            b64[4] = (byte)(input[index + 3] & mask);
-            b64[5] = 0x00;
-            b64[6] = 0x00;
-            b64[7] = 0x00;
-            fixed (byte* b = b64)
-            {
-                ulong* i = (ulong*)b;
-                ulong si = *i;
-                ss.totalSamplesInStream = si;
-            }
-            return ss;
-        }
-        private byte[] readChunk(BinaryReader reader, string desiredChunkID)
-        {
-            reader.BaseStream.Seek(12, SeekOrigin.Begin);
-            byte[] flacin = reader.ReadBytes(8);
-            string thisChunkID = GetString(ref flacin, 0, 4);   
-            int chunkSize = GetInt(ref flacin, 4);
-            while ((thisChunkID != desiredChunkID))
-            {
-                reader.BaseStream.Seek(chunkSize, SeekOrigin.Current);
-                flacin = reader.ReadBytes(8);
-                thisChunkID = GetString(ref flacin, 0, 4);
-                chunkSize = GetInt(ref flacin, 4);
-            }
-            if (thisChunkID == desiredChunkID)
-            {
-                //System.Console.WriteLine(thisChunkID + " ChunkSize= " + chunkSize); 
-                byte[] flac = new byte[chunkSize];
-                flac = reader.ReadBytes(chunkSize);
-
-                return flac;
-            }
-
-            return null;        
-        }
-        private unsafe int Get24(ref byte[] input, int index)
-        {
-            int output = 0;
-            try
-            {
-                if ((input[index] & 0x80) != 0)
-                {
-                    byte[] b24 = new byte[4];
-                    b24[0] = 0xFF;
-                    b24[1] = input[index];
-                    b24[2] = input[index + 1];
-                    b24[3] = input[index + 2];
-                    fixed (byte* b = b24)
-                    {
-                        byte* c = b;
-
-                        int* i = (int*)c;
-                        output = *i;
-                    }
-                }
-                else
-                {
-                    byte[] b24 = new byte[4];
-                    b24[0] = 0x00;
-                    b24[1] = input[index];
-                    b24[2] = input[index + 1];
-                    b24[3] = input[index + 2];
-                    fixed (byte* b = b24)
-                    {
-                        byte* c = b;
-
-                        int* i = (int*)c;
-                        output = *i;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-            }
-            return output;
-        }
-        private unsafe int GetU24(ref byte[] input, int index)
-        {
-            int output = 0;
-            try
-            {
-                byte[] b24 = new byte[4];
-                b24[0] = input[index + 2];
-                b24[1] = input[index + 1];
-                b24[2] = input[index];
-                b24[3] = 0x00;
-                fixed (byte* b = b24)
-                {
-                    byte* c = b;
-
-                    int* i = (int*)c;
-                    output = *i;
-                }
-            }
-            catch (Exception ex)
-            {
-            }
-            return output;
-        }
-
-        private unsafe uint GetUTF8CodedFrameNumber(ref byte[] input, ref int index)
-        {
-            uint v = 0;
-            byte x;
-            uint i;
-            uint val;
-
-            x = input[index];
-
-            if ((x & 0x80) == 0)
-            { /* 0xxxxxxx */
-                v = x;
-                i = 0;
-            }
-            else if ((x & 0xC0) == 1 && (x & 0x20) == 0)
-            { /* 110xxxxx */
-                v = (uint)x & 0x1F;
-                i = 1;
-            }
-            else if ((x & 0xE0) == 1 && (x & 0x10) == 0)
-            { /* 1110xxxx */
-                v = (uint)x & 0x0F;
-                i = 2;
-            }
-            else if ((x & 0xF0) == 1 && (x & 0x08) == 0)
-            { /* 11110xxx */
-                v = (uint)x & 0x07;
-                i = 3;
-            }
-            else if ((x & 0xF8) == 1 && (x & 0x04) == 0)
-            { /* 111110xx */
-                v = (uint)x & 0x03;
-                i = 4;
-            }
-            else if ((x & 0xFC) == 1 && (x & 0x02) == 0)
-            { /* 1111110x */
-                v = (uint)x & 0x01;
-                i = 5;
-            }
-            else
-            {
-                val = 0xffffffff;
-                return val;
-            }
-            int ndx = index++;
-            for (int j=ndx+1; j <= ndx+i; j++)
-            {
-                x = input[j]; index++;
-                if ((x & 0x80) == 0 || (x & 0x40) == 1)
-                { /* 10xxxxxx */
-                    val = 0xffffffff;
-                    return val;
-                }
-                v <<= 6;
-                v |= (uint)(x & 0x3F);
-            }
-            val = v;
-            return val;
-        }
-        private unsafe void Set24(ref byte[] input, int index, int s)
-        {
-            int output = 0;
-            try
-            {
-                if ((input[index] & 0x80) != 0)
-                {
-                    byte[] b24 = new byte[4];
-                    b24[0] = 0xFF;
-                    b24[1] = input[index];
-                    b24[2] = input[index + 1];
-                    b24[3] = input[index + 2];
-                    fixed (byte* b = b24)
-                    {
-                        byte* c = b;
-
-                        int* i = (int*)c;
-                        output = *i;
-                    }
-                }
-                else
-                {
-                    byte[] b24 = new byte[4];
-                    b24[0] = 0x00;
-                    b24[1] = input[index];
-                    b24[2] = input[index + 1];
-                    b24[3] = input[index + 2];
-                    fixed (byte* b = b24)
-                    {
-                        byte* c = b;
-
-                        int* i = (int*)c;
-                        output = *i;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-            }
-            return;
-        }
-
-        private BlockType GetBlockType(byte metaByte)
-        {
-            int bti = (byte)(metaByte & 0x7F);
-            BlockType[] bta = { BlockType.StreamInfo, BlockType.Padding, BlockType.Application, BlockType.SeekTable, BlockType.VorbisComment, BlockType.CueSheet, BlockType.Picture };
-            if ((bti >= 0) && (bti < bta.Length)) return bta[bti];
-            else return BlockType.Unknown;
-        }
-        public int chunkSize;
-        public string format;
-
-        public short minimumBlockSize;
-        public short maximumBlockSize;
-        public int minimumFrameSize;
-        public int maximumFrameSize;
-        public short audioFormat;
-        public short numChannels;
-        public int sampleRate;
-        public int nSamples;
-        public int byteRate;
-        public short blockAlign;
-        public short bitsPerSample;
-        public int bytesPerSample;
-        public int subChunk2Size;
-        public double trackLength;
-        public float[] left;
-        public float[] right;
-        public int[] histogram;
-        public ulong totalSamplesInStream;
-        public string md5;
-        public string vendor;
-        public List<string> comments;
-
-        public FlacReader(string fileName)
-        {
-            _fname = fileName;
-            System.Diagnostics.Debug.WriteLine("Filename=" + _fname);
-            int bps;
-            int[][] samples = Decoder.Decode(_fname, out sampleRate, out bps);
-            bitsPerSample = (short)bps;
-            nSamples = samples[0].Length;
-            numChannels = (short)samples.Length;
-            trackLength = nSamples / (double)sampleRate;
-            left = new float[nSamples];
-            right = new float[nSamples];
-
-            int histogramSize = (int)Math.Pow(2, (double)bitsPerSample);
-            histogram = new int[histogramSize];
-            for (int i = 0; i < histogramSize; i++) histogram[i] = 0;
-
-            int startSample = 0;
-
-            int endSample = nSamples - 1;
-
-            int sample = startSample;
-
-            while (sample <= endSample)
-            {
-                left[sample] = 0;
-                if (bitsPerSample == 16)
-                {
-                    short l = (short)samples[0][sample];
-                    int hi = l + (histogramSize / 2);
-                    if ((hi >= 0) && (hi < histogram.Length)) histogram[hi]++;
-                    left[sample] = (float)samples[0][sample];
-                }
-                if (bitsPerSample == 24)
-                {
-                    int s = samples[0][sample];
-                    int hi = s + (histogramSize / 2);
-                    if ((hi >= 0) && (hi < histogram.Length)) histogram[hi]++;
-                    left[sample] = (float)samples[0][sample];
-                }
-
-
-                right[sample] = 0;
-
-                if (numChannels > 1)
-                {
+                    left[sample] = 0;
                     if (bitsPerSample == 16)
                     {
-                        short r = (short)samples[1][sample];
-                        right[sample] = (float)samples[1][sample];
+                        short s = (short)(samples[0][sample] >> 16);
+						//int s = (int)samples[0][sample];
+						int hi = s + (histogramSize / 2);
+                        if ((hi >= 0) && (hi < histogramLeft.Length)) histogramLeft[hi]++;
+                        left[sample] = (float)s;
                     }
                     if (bitsPerSample == 24)
                     {
-                        int s = samples[1][sample];
-                        right[sample] = (float)samples[1][sample];
+                        int s24 = (samples[0][sample] >> 8);
+                        int hi = s24 + (histogramSize / 2);
+                        if ((hi >= 0) && (hi < histogramLeft.Length)) histogramLeft[hi]++;
+                        left[sample] = (float)s24;
                     }
-                }
 
-                sample++;
-            }
-        }
-
-        public void FlacReaderOrig(string fileName)
-        {
-
-            _fname = fileName;
-            System.Diagnostics.Debug.WriteLine("Filename=" + _fname);
-            using (BinaryReader reader = new BinaryReader(File.Open(_fname, FileMode.Open)))
-            {
-                int pos = 0;
-                int length = (int)reader.BaseStream.Length;
-                byte[] flacin = reader.ReadBytes(4);  // fLaC
-                format = GetString(ref flacin, 0, 4);
-
-                bool lastHeader = false;
-
-                // Loop throuugh Meta Data Headers
-                do 
-                {                
-                    flacin = reader.ReadBytes(4); // Meta data block header
-                    pos = 0;
-                    byte last_type = flacin[0];
-                    pos += 1;
-                    int mbl = GetU24(ref flacin, pos);
-                    System.Diagnostics.Debug.WriteLine("MetaDataBlockLen=" + mbl);
-
-                    BlockType blockType = GetBlockType(last_type);
-                    System.Diagnostics.Debug.WriteLine("BlockType=" + blockType.ToString());
-
-                    lastHeader = (last_type & 0x80) != 0;
-
-                    switch (blockType)
+                    right[sample] = 0;
+                    if (numChannels > 1)
                     {
-                        case BlockType.StreamInfo:
-                          
-                            flacin = reader.ReadBytes(mbl);
-                            pos = 0;
-                            minimumBlockSize = GetShort(ref flacin, pos); pos += 2;
-                            maximumBlockSize = GetShort(ref flacin, pos); pos += 2;
-                            minimumFrameSize = GetU24(ref flacin, pos); pos += 3;
-                            maximumFrameSize = GetU24(ref flacin, pos); pos += 3;
-                            SubStreamInfo ss = GetSubStreamInfo(ref flacin, pos); pos += 8;
-                            sampleRate = (int)ss.sampleRate;
-                            numChannels = (short)ss.numChannels;
-                            bitsPerSample = (short)ss.bitsPerSample;
-                            totalSamplesInStream = ss.totalSamplesInStream;
-                            md5 = GetHexString(ref flacin, pos, 16); pos += 16;
-                            System.Diagnostics.Debug.WriteLine("sampleRate=" + ss.sampleRate);
-                            System.Diagnostics.Debug.WriteLine("numChannels=" + ss.numChannels);
-                            System.Diagnostics.Debug.WriteLine("bitsPerSample=" + ss.bitsPerSample);
-                            System.Diagnostics.Debug.WriteLine("totalSamplesInStream=" + ss.totalSamplesInStream);
-                            System.Diagnostics.Debug.WriteLine("md5=" + md5);
-                            System.Diagnostics.Debug.WriteLine("FinalPosofStreamInfo=" + pos);
-                            break;
-                             
-                        case BlockType.VorbisComment:
-                            flacin = reader.ReadBytes(mbl);
-                            pos = 0;
-                            int vendor_length = GetInt(ref flacin, pos); pos += 4;
-                            vendor = GetString(ref flacin, pos, vendor_length); pos += vendor_length;
-                            int user_comment_list_length = GetInt(ref flacin, pos); pos += 4;
-                            comments = new List<string>();
-                            for (int i = 0; i < user_comment_list_length; i++)
-                            {
-                                int comment_length = GetInt(ref flacin, pos); pos += 4;
-                                comments.Add(GetString(ref flacin, pos, comment_length)); pos += comment_length;
-                            }
-                            break;
-                        case BlockType.Application:
-                        case BlockType.CueSheet:
-                        case BlockType.Padding:
-                        case BlockType.Picture:
-                        case BlockType.SeekTable:
-                        case BlockType.Unknown:
-                            flacin = reader.ReadBytes(mbl);
-                            break;
+                        if (bitsPerSample == 16)
+                        {
+						    short s = (short)(samples[1][sample] >> 16);
+							// int s = samples[1][sample];
+
+							int hi = s + (histogramSize / 2);
+                            if ((hi >= 0) && (hi < histogramRight.Length)) histogramRight[hi]++;
+                            right[sample] = (float)s;
+                        }
+                        if (bitsPerSample == 24)
+                        {
+                        	int s24 = (samples[1][sample] >> 8);
+                            int hi = s24 + (histogramSize / 2);
+                            if ((hi >= 0) && (hi < histogramRight.Length)) histogramRight[hi]++;
+                            right[sample] = (float)s24;
+                        }
                     }
-                } while (!lastHeader);
-
-                // Loop through frames
-                do
-                {
-                    flacin = reader.ReadBytes(30); pos = 0;
-                    byte mask = 0x01;
-                    int variableBlockingStrategy = (flacin[1] & mask);
-                    mask = 0xF0;
-                    int interchannelSampleBlockSize = (flacin[2] & mask) >> 4;
-                    mask = 0x0F;
-                    int frameSampleRate = (flacin[2] & mask);
-                    mask = 0xF0;
-                    int channelAssignment = (flacin[3] & mask) >> 4;
-                    mask = 0x0E;
-                    pos = 4;
-                    int sampleSize = (flacin[3] & mask) >> 1;
-                    uint frameNumber = GetUTF8CodedFrameNumber(ref flacin, ref pos);
-                    byte frameCRC = flacin[pos]; pos++;
-                    byte subFrameHeader = flacin[pos]; pos++;
-                    mask = 0x7E;
-                    int subFrameType = (subFrameHeader & mask) >> 1;
-
+                  
+                    sample++;
                 }
-                while (false);
-            }
-        }
-        
-        public void Dump()
-        {
-            System.Diagnostics.Debug.WriteLine("fileName," + _fname);
-            System.Diagnostics.Debug.WriteLine("fileSize," + chunkSize);
-            System.Diagnostics.Debug.WriteLine("Format," + format);
-            System.Diagnostics.Debug.WriteLine("numChannels," + numChannels);
-            System.Diagnostics.Debug.WriteLine("sampleRate," + sampleRate);
-            System.Diagnostics.Debug.WriteLine("bitsPerSample," + bitsPerSample);
-            System.Diagnostics.Debug.WriteLine("minimumBlockSize=" + minimumBlockSize);
-            System.Diagnostics.Debug.WriteLine("maximumBlockSize=" + maximumBlockSize);
-            System.Diagnostics.Debug.WriteLine("minimumFrameSize=" + minimumFrameSize);
-            System.Diagnostics.Debug.WriteLine("maximumFrameSize=" + maximumFrameSize);
-            System.Diagnostics.Debug.WriteLine("totalSamplesInStream=" + totalSamplesInStream);
-            System.Diagnostics.Debug.WriteLine("md5=" + md5);
-            System.Diagnostics.Debug.WriteLine("vendor=" + vendor);
-            //foreach (string c in comments)
-            //{
-            //    System.Diagnostics.Debug.WriteLine("comment=" + c);
-            //}
-        }
-        
-    }
+			}
+		}
+		
+		/// <summary>Reads residuals and stores them in the specified array.</summary>
+		/// <param name="reader">The bit reader.</param>
+		/// <param name="predictorOrder">The predictor order.</param>
+		/// <param name="blockSize">The block size.</param>
+		/// <returns>The signed residuals.</returns>
+		private static int[] ReadResiduals(BitReader reader, int predictorOrder, int blockSize) {
+			int[] residuals = new int[blockSize];
+			uint method = reader.ReadBits(2);
+			if (method == 0 | method == 1) {
+				// --- RESIDUAL_CODING_METHOD_PARTITIONED_RICE /
+				//     RESIDUAL_CODING_METHOD_PARTITIONED_RICE2 ---
+				uint partitionOrder = reader.ReadBits(4);
+				int numberOfPartitions = 1 << (int)partitionOrder;
+				int numberOfBits = 4 + (int)method;
+				uint escape = method == 0 ? (uint)15 : (uint)31;
+				int offset = predictorOrder;
+				for (int i = 0; i < numberOfPartitions; i++) {
+					int riceParameter = (int)reader.ReadBits(numberOfBits);
+					int numberOfSamples;
+					if (partitionOrder == 0) {
+						numberOfSamples = blockSize - predictorOrder;
+					} else if (i == 0) {
+						numberOfSamples = (blockSize >> (int)partitionOrder) - predictorOrder;
+					} else {
+						numberOfSamples = blockSize >> (int)partitionOrder;
+					}
+					if (riceParameter == escape) {
+						int bitsPerSample = (int)reader.ReadBits(5);
+						for (int j = 0; j < numberOfSamples; j++) {
+							residuals[offset + j] = (int)reader.ReadBits(bitsPerSample);
+						}
+						offset += numberOfSamples;
+					} else {
+						for (int j = 0; j < numberOfSamples; j++) {
+							int value = reader.ReadRiceEncodedInteger(riceParameter);
+							residuals[offset + j] = value;
+						}
+						offset += numberOfSamples;
+					}
+				}
+				return residuals;
+			} else {
+				// --- not supported ---
+				throw new InvalidDataException();
+			}
+		}
+		
+		/// <summary>Gets a signed integer from an unsigned integer assuming the unsigned integer is stored in two's complement notation.</summary>
+		/// <param name="value">The unsigned integer.</param>
+		/// <param name="range">The value range, e.g. 16 for 4 bits, 256 for 8 bits, 65536 for 16 bits, etc.</param>
+		/// <returns>The signed integer.</returns>
+		private static int FromTwosComplement(uint value, uint range) {
+			if (value < (range >> 1)) {
+				return (int)value;
+			} else {
+				return (int)value - (int)range;
+			}
+		}
+		public void Dump()
+		{
+			base.Dump();
+			 System.Diagnostics.Debug.WriteLine("md5=" + md5String);
+		}
+	}
 }

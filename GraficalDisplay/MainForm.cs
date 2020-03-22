@@ -752,10 +752,14 @@ namespace GraficDisplay
             ds.Name = Path.GetFileNameWithoutExtension(filename);
             ds.OnRenderXAxisLabel += RenderXLabel;
             string ext = Path.GetExtension(filename);
-            WaveDump.FlacReader wr0 = null;
+            WaveDump.AudioReader wr0 = null;
             if (ext == ".flac")
             {
                 wr0 = new WaveDump.FlacReader(filename);
+            }
+            else
+            {
+                wr0 = new WaveDump.WaveReader(filename);
             }
 
             ds.Length = wr0.nSamples;
@@ -791,10 +795,10 @@ namespace GraficDisplay
             }
             else
             {
-                for (int i = 0; i < wr0.histogram.Length; i++)
+                for (int i = 0; i < wr0.histogramLeft.Length; i++)
                 {
                     ds.Samples[i].x = (double)i / (double)ds.SampleRate;
-                    float y = wr0.histogram[i];
+                    float y = wr0.histogramLeft[i];
 
                     ds.Samples[i].y = y;
 
@@ -823,8 +827,8 @@ namespace GraficDisplay
                 CheckPathExists = true,
                 Multiselect = true,
                 DefaultExt = "wav",
-                Filter = "wav files (*.wav)|*.wav|flac files (*.flac)|*.flac",
-                FilterIndex = 2,
+                Filter = "wav files (*.wav)|*.wav|flac files (*.flac)|*.flac|All Files (*.*)|*.*",
+                FilterIndex = 3,
                 RestoreDirectory = true,
 
                 ReadOnlyChecked = true,
@@ -843,19 +847,10 @@ namespace GraficDisplay
                 
                 for (int j = 0; j < openFileDialog1.FileNames.Length; j++)
                 {
-                    string ext = Path.GetExtension(openFileDialog1.FileNames[j]);
-                    if (ext == ".flac")
-                    {
-                        var fr0 = new WaveDump.FlacReader(openFileDialog1.FileNames[j]);
-                        fr0.Dump();
-                    }
-                    else
-                    {
-                        if (j == 0) display.DataSources.Add(createFileDataSource(openFileDialog1.FileNames[j], WaveDump.WaveReader.Channel.LEFT));
-                        else display.DataSources.Add(createFileDataSource(openFileDialog1.FileNames[j], WaveDump.WaveReader.Channel.LEFT));
-                        xmin = Math.Min(xmin, display.DataSources[j].XMin);
-                        xmax = Math.Max(xmax, display.DataSources[j].XMax);
-                    }
+                    if (j == 0) display.DataSources.Add(createFileDataSource(openFileDialog1.FileNames[j], WaveDump.WaveReader.Channel.LEFT));
+                    else display.DataSources.Add(createFileDataSource(openFileDialog1.FileNames[j], WaveDump.WaveReader.Channel.LEFT));
+                    xmin = Math.Min(xmin, display.DataSources[j].XMin);
+                    xmax = Math.Max(xmax, display.DataSources[j].XMax);               
                 }
 
                 if (display.DataSources.Count < 2) return;

@@ -35,7 +35,7 @@ namespace WaveDump
             System.Diagnostics.Debug.WriteLine("fileSize=" + fileSize);
             System.Diagnostics.Debug.WriteLine("Format=" + format);
             System.Diagnostics.Debug.WriteLine("numChannels=" + numChannels);
-            System.Diagnostics.Debug.WriteLine("nSamples=" + numSamples);
+            System.Diagnostics.Debug.WriteLine("nSamples=" + nSamples);
             System.Diagnostics.Debug.WriteLine("sampleRate=" + sampleRate);
             System.Diagnostics.Debug.WriteLine("trackLength=" + trackLength);
             System.Diagnostics.Debug.WriteLine("bitsPerSample=" + bitsPerSample);

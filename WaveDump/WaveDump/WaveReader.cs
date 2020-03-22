@@ -227,7 +227,7 @@ namespace WaveDump
         public int bytesPerSample;
         public int subChunk2Size;
 
-        public WaveReader(string fileName)
+        public WaveReader(string fileName) : base(fileName)
         {
 
             _fname = fileName;
