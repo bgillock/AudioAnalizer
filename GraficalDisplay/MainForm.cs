@@ -40,8 +40,8 @@ namespace GraficDisplay
         private String CurColorSchema = "BLACK";
         //private PrecisionTimer.Timer mTimer = null;
         private DateTime lastTimerTick = DateTime.Now;
-        private String ReferenceFileName = @"C:\Users\bgill\Desktop\Sound\Music\Hoff Innocence 441 16 - CDRip.flac";
-        private String CompareFileName = @"C:\Users\bgill\Desktop\Sound\Music\Hoff Innocence 441 16.flac";
+        private String ReferenceFileName = @"C:\Users\bgill\Desktop\Sound\Music\Parachutes - CDRip [master].flac";
+        private String CompareFileName = @"C:\Users\bgill\Desktop\Sound\Music\Parachutes [S_LMS;P_ROC;1].wav";
 
         public MainForm()
         {           

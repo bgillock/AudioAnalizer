@@ -28,8 +28,8 @@ namespace WaveDump
         {
             _fname = fileName;
         }
-      
-        public void Dump()
+
+        virtual public void Dump()
         {
             System.Diagnostics.Debug.WriteLine("fileName=" + _fname);
             System.Diagnostics.Debug.WriteLine("fileSize=" + fileSize);

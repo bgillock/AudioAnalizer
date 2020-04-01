@@ -12,6 +12,10 @@ namespace WaveDump {
 		/// <param name="file">The path to the native FLAC file.</param>
 		/// <returns>The raw samples per channel, padded into the most-significant bits (makes all samples 32-bits wide and signed).</returns>
 		public string md5String;
+		int nFixedBlocks = 0;
+		int nConstantBlocks = 0;
+		int nVerbatimBlocks = 0;
+		int nLPCBlocks = 0;
 		private string GetHexString(ref byte[] input, int index, int size)
         {
             StringBuilder hex = new StringBuilder(size * 2);
@@ -223,6 +227,7 @@ namespace WaveDump {
 							subframeBitsPerSample++;
 						}
 						if (subframeType == 0) {
+							nConstantBlocks++;
 							// --- SUBFRAME_CONSTANT ---
 							int value = FromTwosComplement(reader.ReadBits((int)subframeBitsPerSample), (uint)1 << subframeBitsPerSample) << (int)(32 - subframeBitsPerSample);
 							int numberOfSamples = blockNumberOfSamples * bitsPerSample / subframeBitsPerSample;
@@ -230,6 +235,7 @@ namespace WaveDump {
 								samples[i][samplesUsed + j] = value;
 							}
 						} else if (subframeType == 1) {
+							nVerbatimBlocks++;
 							// --- SUBFRAME_VERBATIM ---
 							if (blockSampleRate == sampleRate) {
 								for (int j = 0; j < blockNumberOfSamples; j++) {
@@ -240,6 +246,7 @@ namespace WaveDump {
 								throw new NotSupportedException("Variable sample rates are not supported by this decoder.");
 							}
 						} else if ((subframeType & 0x38) == 8) {
+							nFixedBlocks++;
 							// --- SUBFRAME_FIXED ---
 							int predictorOrder = (int)subframeType & 7;
 							if (predictorOrder > 4) {
@@ -287,6 +294,7 @@ namespace WaveDump {
 								throw new NotSupportedException("Variable sample rates are not supported by this decoder.");
 							}
 						} else if ((subframeType & 0x20) == 0x20) {
+							nLPCBlocks++;
 							// --- SUBFRAME_LPC ---
 							int predictorOrder = ((int)subframeType & 0x1F) + 1;
 							int[] blockSamples = new int[blockNumberOfSamples];
@@ -610,10 +618,14 @@ namespace WaveDump {
 				return (int)value - (int)range;
 			}
 		}
-		public void Dump()
+		override public void Dump()
 		{
 			base.Dump();
-			 System.Diagnostics.Debug.WriteLine("md5=" + md5String);
+			System.Diagnostics.Debug.WriteLine("md5=" + md5String);
+			System.Diagnostics.Debug.WriteLine("nFixedBlocks=" + nFixedBlocks);
+			System.Diagnostics.Debug.WriteLine("nConstantBlocks=" + nConstantBlocks);
+			System.Diagnostics.Debug.WriteLine("nVerbatimBlocks=" + nVerbatimBlocks);
+			System.Diagnostics.Debug.WriteLine("nLPCBlocks=" + nLPCBlocks);
 		}
 	}
 }

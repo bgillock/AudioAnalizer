@@ -119,13 +119,13 @@ namespace WaveDump
             int output = 0;
             try
             {
-                if ((input[index] & 0x80) != 0)
+                if ((input[index+2] & 0x80) != 0)
                 {
                     byte[] b24 = new byte[4];
-                    b24[0] = 0xFF;
-                    b24[1] = input[index];
-                    b24[2] = input[index + 1];
-                    b24[3] = input[index + 2];
+                    b24[0] = input[index + 0];
+                    b24[1] = input[index + 1];
+                    b24[2] = input[index + 2];
+                    b24[3] = 0xFF;
                     fixed (byte* b = b24)
                     {
                         byte* c = b;
@@ -137,16 +137,20 @@ namespace WaveDump
                 else
                 {
                     byte[] b24 = new byte[4];
-                    b24[0] = 0x00;
-                    b24[1] = input[index];
-                    b24[2] = input[index + 1];
-                    b24[3] = input[index + 2];
+                    b24[0] = input[index + 0];
+                    b24[1] = input[index + 1];
+                    b24[2] = input[index + 2];
+                    b24[3] = 0x00;
                     fixed (byte* b = b24)
                     {
                         byte* c = b;
 
                         int* i = (int*)c;
                         output = *i;
+                        if (output > 0)
+                        {
+                            float a = (float)output;
+                        }
                     }
                 }
             }
@@ -286,6 +290,7 @@ namespace WaveDump
                     if (bitsPerSample == 24)
                     {
                         int s24 = Get24(ref audio, pos); pos += 3;
+
                         int hi = s24 + (histogramSize / 2);
                         if ((hi >= 0) && (hi < histogramLeft.Length)) histogramLeft[hi]++;
                         left[sample] = (float)s24;
@@ -314,7 +319,7 @@ namespace WaveDump
                 }
             }
         }
-        public void Dump()
+        override public void Dump()
         {
             base.Dump();
             System.Diagnostics.Debug.WriteLine("subChunk1Size," + subChunk1Size);
